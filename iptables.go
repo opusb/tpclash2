@@ -9,28 +9,26 @@ import (
 	"strconv"
 
 	clsconfig "github.com/Dreamacro/clash/config"
-	clsconstant "github.com/Dreamacro/clash/constant"
+	clsconst "github.com/Dreamacro/clash/constant"
 )
 
-var (
-	localCIDR = []string{
-		"0.0.0.0/8",
-		"127.0.0.0/8",
-		"10.0.0.0/8",
-		"172.16.0.0/12",
-		"192.168.0.0/16",
-		"169.254.0.0/16",
-		"224.0.0.0/4",
-		"240.0.0.0/4",
-	}
-)
+var localCIDR = []string{
+	"0.0.0.0/8",
+	"127.0.0.0/8",
+	"10.0.0.0/8",
+	"172.16.0.0/12",
+	"192.168.0.0/16",
+	"169.254.0.0/16",
+	"224.0.0.0/4",
+	"240.0.0.0/4",
+}
 
 func fixIPTables() error {
 
 	/* Check Config */
 
 	logrus.Infof("loading clash config...")
-	cbs, err := ioutil.ReadFile(conf.Path)
+	cbs, err := ioutil.ReadFile(clashConfig)
 	if err != nil {
 		return fmt.Errorf("faile to load clash config: %w", err)
 	}
@@ -39,7 +37,7 @@ func fixIPTables() error {
 		return fmt.Errorf("faile to load clash config: %w", err)
 	}
 
-	if clsc.DNS.EnhancedMode != clsconstant.DNSFakeIP {
+	if clsc.DNS.EnhancedMode != clsconst.DNSFakeIP {
 		return fmt.Errorf("only support fake-ip dns mode")
 	}
 
@@ -129,7 +127,7 @@ func fixIPTables() error {
 
 	/* TPClash Output Rules */
 
-	logrus.Info("checking tplcash output rules...")
+	logrus.Info("checking tpclash output rules...")
 	err = ip4.AppendUnique(tableMangle, chainOutput, "-p", "tcp", "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
 	if err != nil {
 		return fmt.Errorf("failed to append dns rules: %w", err)

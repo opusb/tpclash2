@@ -5,18 +5,22 @@ go 1.17
 require (
 	github.com/Dreamacro/clash v1.9.0
 	github.com/coreos/go-iptables v0.6.0
+	github.com/lorenzosaino/go-sysctl v0.2.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cobra v1.3.0
+	go.uber.org/automaxprocs v1.4.0
 )
 
 require (
 	github.com/BurntSushi/toml v1.0.0 // indirect
 	github.com/Dreamacro/go-shadowsocks2 v0.1.7 // indirect
+	github.com/go-chi/chi/v5 v5.0.7 // indirect
+	github.com/go-chi/cors v1.2.0 // indirect
+	github.com/go-chi/render v1.0.1 // indirect
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/insomniacslk/dhcp v0.0.0-20220119180841-3c283ff8b7dd // indirect
-	github.com/lorenzosaino/go-sysctl v0.2.0 // indirect
 	github.com/miekg/dns v1.1.46 // indirect
 	github.com/oschwald/geoip2-golang v1.6.1 // indirect
 	github.com/oschwald/maxminddb-golang v1.8.0 // indirect
