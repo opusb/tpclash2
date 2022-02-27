@@ -51,15 +51,25 @@ func run() {
 }
 
 func fix() {
-	if err := fixSysctl(); err != nil {
+	if err := applySysctl(); err != nil {
 		logrus.Fatalf("Fix Sysctl Error: %s", err)
 	}
 
-	if err := fixRoute(); err != nil {
+	if err := applyRoute(); err != nil {
 		logrus.Fatalf("Fix IP Route Error: %s", err)
 	}
 
-	if err := fixIPTables(); err != nil {
+	if err := applyIPTables(); err != nil {
 		logrus.Fatalf("Fix IPTables Error: %s", err)
+	}
+}
+
+func clean() {
+	if err := cleanIPTables(); err != nil {
+		logrus.Fatalf("Clean IPTables Error: %w", err)
+	}
+
+	if err := cleanRoute(); err != nil {
+		logrus.Fatalf("Clean Route Error: %w", err)
 	}
 }

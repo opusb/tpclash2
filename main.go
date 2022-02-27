@@ -13,7 +13,7 @@ var clashUI string
 var clashUIAddr string
 
 var rootCmd = &cobra.Command{
-	Use:   "tpcls",
+	Use:   "tpclash",
 	Short: "Transparent proxy tool for Clash",
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		if runtime.GOOS != "linux" {
@@ -21,6 +21,11 @@ var rootCmd = &cobra.Command{
 		}
 		return nil
 	},
+}
+
+var runCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Run tpclash",
 	Run: func(cmd *cobra.Command, args []string) {
 		fix()
 		run()
@@ -32,6 +37,14 @@ var fixCmd = &cobra.Command{
 	Short: "Fix transparent proxy",
 	Run: func(cmd *cobra.Command, args []string) {
 		fix()
+	},
+}
+
+var cleanCmd = &cobra.Command{
+	Use:   "clean",
+	Short: "Clean tpclash iptables and route config",
+	Run: func(cmd *cobra.Command, args []string) {
+		clean()
 	},
 }
 
@@ -49,7 +62,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&clashUI, "ui", "u", "official", "clash dashboard(official/yacd)")
 	rootCmd.PersistentFlags().StringVarP(&clashUIAddr, "listen", "l", "0.0.0.0:9527", "clash dashboard listen address")
 
-	rootCmd.AddCommand(fixCmd)
+	rootCmd.AddCommand(fixCmd, runCmd, cleanCmd)
 }
 
 func main() {
