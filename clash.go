@@ -32,7 +32,7 @@ func run() {
 		gid, _ := strconv.Atoi(u.Gid)
 
 		cmds := []string{filepath.Join(clashHome, "xclash"), "-f", clashConfig, "-d", clashHome, "-ext-ui", filepath.Join(clashHome, clashUI)}
-		logrus.Infof("[clash] running cmds: %v", cmds)
+		logrus.Debugf("[clash] running cmds: %v", cmds)
 
 		cmd := exec.Command(cmds[0], cmds[1:]...)
 		cmd.Stdout = os.Stdout
