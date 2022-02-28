@@ -1,27 +1,55 @@
+//go:build linux
+// +build linux
+
 package main
 
 import (
 	"context"
-	"github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 	"os/signal"
+	"os/user"
 	"path/filepath"
+	"strconv"
 	"syscall"
+
+	"github.com/sirupsen/logrus"
 )
 
 func run() {
 	logrus.Info("starting clash...")
-	go func() {
-		cmd := exec.Command(filepath.Join(clashHome, "xclash"), "-c", clashConfig, "-d", clashHome, "-ext-ui", clashUI)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		_ = cmd.Run()
-	}()
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
+
+	go func() {
+		u, err := user.Lookup(clashUser)
+		if err != nil {
+			logrus.Fatalf("failed to get tpclash user: %v", err)
+		}
+
+		uid, _ := strconv.Atoi(u.Uid)
+		gid, _ := strconv.Atoi(u.Gid)
+
+		cmd := exec.Command(filepath.Join(clashHome, "xclash"), "-f", clashConfig, "-d", clashHome, "-ext-ui", clashUI)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Credential: &syscall.Credential{
+				Uid: uint32(uid),
+				Gid: uint32(gid),
+			},
+			AmbientCaps: []uintptr{CAP_NET_BIND_SERVICE, CAP_NET_ADMIN, CAP_NET_RAW},
+		}
+
+		err = cmd.Run()
+		select {
+		case <-ctx.Done():
+		default:
+			logrus.Fatal(err)
+		}
+	}()
+
 	<-ctx.Done()
 	logrus.Info("TPClash exit...")
 }

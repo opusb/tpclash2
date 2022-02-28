@@ -22,3 +22,10 @@ const (
 	tproxyMark = "666"
 	clashUser  = "tpclash"
 )
+
+// https://github.com/torvalds/linux/blob/master/include/uapi/linux/capability.h
+const (
+	CAP_NET_BIND_SERVICE = 10
+	CAP_NET_ADMIN        = 12
+	CAP_NET_RAW          = 13
+)

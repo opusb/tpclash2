@@ -1,10 +1,11 @@
 package main
 
 import (
+	"runtime"
+
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"runtime"
 )
 
 var clashHome string
@@ -22,7 +23,6 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run tpclash",
 	Run: func(cmd *cobra.Command, args []string) {
-		copyFiles()
 		fix()
 		run()
 	},
@@ -91,9 +91,9 @@ func main() {
 		}
 
 		// copy static files
+		createUser()
 		mkHomeDir()
-		//copyBin()
-		//copyUI()
+		copyFiles()
 	})
 	cobra.CheckErr(rootCmd.Execute())
 }

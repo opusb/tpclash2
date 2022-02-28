@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/sirupsen/logrus"
-	"os/user"
 )
 
 var localCIDR = []string{
@@ -30,7 +30,7 @@ func createChain(ins *iptables.IPTables, table, chain string) error {
 		return fmt.Errorf("failed to check chain: %s, table: %s, error: %v", chain, table, err)
 	}
 	if !ok {
-		logrus.Infof("chian %s not found, creating...", chain)
+		logrus.Debugf("[iptables] chian %s not found, creating...", chain)
 		err = ins.NewChain(table, chain)
 		if err != nil {
 			return fmt.Errorf("failed to create chain: %s, error: %v", chain, err)
@@ -42,7 +42,7 @@ func createChain(ins *iptables.IPTables, table, chain string) error {
 func applyLocalNetwork(ins *iptables.IPTables, table, chain string) error {
 	logrus.Infof("[iptables] checking chain %s/%s rules...", table, chain)
 	for _, cidr := range localCIDR {
-		logrus.Infof("append local cidr %s rule to %s/%s...", cidr, table, chain)
+		logrus.Debugf("[iptables] append local cidr %s rule to %s/%s...", cidr, table, chain)
 		err := ins.AppendUnique(table, chain, "-d", cidr, "-j", actionReturn)
 		if err != nil {
 			return fmt.Errorf("failed to append local cidr rules: %v", err)
@@ -106,13 +106,7 @@ func applyIPTables() error {
 	}
 
 	logrus.Infof("[iptables] checking chain %s/%s rules...", tableNat, chainIP4DNS)
-	var dnsSpec []string
-	if conf.DNSHost != "" {
-		dnsSpec = []string{"-p", "udp", "-d", conf.DNSHost, "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort}
-	} else {
-		dnsSpec = []string{"-p", "udp", "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort}
-	}
-	err = ip4.AppendUnique(tableNat, chainIP4DNS, dnsSpec...)
+	err = ip4.AppendUnique(tableNat, chainIP4DNS, "-p", "udp", "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort)
 	if err != nil {
 		return fmt.Errorf("failed to append dns rules: %v", err)
 	}
@@ -148,14 +142,22 @@ func applyIPTables() error {
 	if err != nil {
 		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
 	}
+	err = ip4.DeleteIfExists(tableNat, chainPreRouting, "-j", chainIP4DNS)
+	if err != nil {
+		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
+	}
 
-	err = ip4.Insert(tableMangle, chainPreRouting, 0, "-j", chainIP4)
+	err = ip4.AppendUnique(tableMangle, chainPreRouting, "-j", chainIP4)
 	if err != nil {
 		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableMangle, chainPreRouting, chainIP4, err)
 	}
-	err = ip4.Insert(tableMangle, chainOutput, 0, "-j", chainIP4Local)
+	err = ip4.AppendUnique(tableMangle, chainOutput, "-j", chainIP4Local)
 	if err != nil {
 		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
+	}
+	err = ip4.AppendUnique(tableNat, chainPreRouting, "-j", chainIP4DNS)
+	if err != nil {
+		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
 	}
 
 	return nil
@@ -179,10 +181,15 @@ func cleanIPTables() error {
 	}
 
 	if ok {
-		logrus.Infof("[iptables] clean %s/%s...", tableMangle, chainPreRouting)
+		logrus.Debugf("[iptables] clean %s/%s...", tableMangle, chainPreRouting)
 		err = ip4.DeleteIfExists(tableMangle, chainPreRouting, "-j", chainIP4)
 		if err != nil {
 			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainPreRouting, chainIP4, err)
+		}
+
+		err = ip4.ClearAndDeleteChain(tableMangle, chainIP4)
+		if err != nil {
+			return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableMangle, chainIP4, err)
 		}
 	}
 
@@ -192,28 +199,37 @@ func cleanIPTables() error {
 	}
 
 	if ok {
-		logrus.Infof("[iptables] clean %s/%s...", tableMangle, chainOutput)
+		logrus.Debugf("[iptables] clean %s/%s...", tableMangle, chainOutput)
 		err = ip4.DeleteIfExists(tableMangle, chainOutput, "-j", chainIP4Local)
 		if err != nil {
 			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
 		}
+		err = ip4.ClearAndDeleteChain(tableMangle, chainIP4Local)
+		if err != nil {
+			return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableMangle, chainIP4Local, err)
+		}
 	}
 
-	logrus.Info("[iptables] clean icmp fake...")
+	ok, err = ip4.ChainExists(tableNat, chainIP4DNS)
+	if err != nil {
+		return fmt.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNS, err)
+	}
+	if ok {
+		logrus.Debugf("[iptables] clean %s/%s...", tableNat, chainIP4DNS)
+		err = ip4.ClearAndDeleteChain(tableNat, chainIP4DNS)
+		if err != nil {
+			return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
+		}
+	}
+
+	logrus.Debug("[iptables] clean icmp fake...")
 	err = ip4.DeleteIfExists(tableNat, chainPreRouting, "-p", "icmp", "-d", conf.FakeIPRange, "-j", actionDNat, "--to-destination", "127.0.0.1")
 	if err != nil {
 		return fmt.Errorf("failed to delete icmp fake rules: %v", err)
 	}
 
-	u, err := user.Lookup(clashUser)
-	if err != nil {
-		if _, ok := err.(user.UnknownUserError); !ok {
-			return fmt.Errorf("failed to query os user: %v", err)
-		}
-	}
-
-	if u != nil {
-		logrus.Info("[iptables] clean tpclash output...")
+	if !checkUser() {
+		logrus.Debug("[iptables] clean tpclash output...")
 		err = ip4.DeleteIfExists(tableMangle, chainOutput, "-p", "tcp", "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
 		if err != nil {
 			return fmt.Errorf("failed to delete tpclash output rules: %v", err)
@@ -224,14 +240,8 @@ func cleanIPTables() error {
 		}
 	}
 
-	logrus.Info("[iptables] clean dns...")
-	var dnsSpec []string
-	if conf.DNSHost != "" {
-		dnsSpec = []string{"-p", "udp", "-d", conf.DNSHost, "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort}
-	} else {
-		dnsSpec = []string{"-p", "udp", "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort}
-	}
-	err = ip4.DeleteIfExists(tableNat, chainIP4DNS, dnsSpec...)
+	logrus.Debug("[iptables] clean dns...")
+	err = ip4.DeleteIfExists(tableNat, chainIP4DNS, "-p", "udp", "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort)
 	if err != nil {
 		return fmt.Errorf("failed to delete dns rules: %v", err)
 	}

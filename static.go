@@ -2,11 +2,12 @@ package main
 
 import (
 	"embed"
-	"github.com/sirupsen/logrus"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+
+	"github.com/sirupsen/logrus"
 )
 
 //go:embed static
@@ -30,25 +31,21 @@ func mkHomeDir() {
 
 func copyFiles() {
 	logrus.Info("[static] copy static files...")
-	info, err := os.Stat(clashHome)
-	if err != nil {
-		if os.IsNotExist(err) {
-			err = os.MkdirAll(clashHome, 0755)
-			if err != nil {
-				logrus.Fatalf("failed to create clash home dir: %v", err)
-			}
-		} else {
-			logrus.Fatalf("failed to open clash home dir: %v", err)
-		}
-	} else if !info.IsDir() {
-		logrus.Fatalf("clash home path is not a dir")
-	}
 
 	dirEntries, err := static.ReadDir("static")
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	err = extract(static, dirEntries, "static", clashHome)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	err = chownR(clashHome)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	err = chmod(filepath.Join(clashHome, "xclash"))
 	if err != nil {
 		logrus.Fatal(err)
 	}

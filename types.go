@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	clsconst "github.com/Dreamacro/clash/constant"
-	"github.com/spf13/viper"
 	"net"
 	"strconv"
 	"strings"
+
+	clsconst "github.com/Dreamacro/clash/constant"
+	"github.com/spf13/viper"
 )
 
 type Conf struct {
@@ -18,7 +19,6 @@ type Conf struct {
 }
 
 func parseConf() (*Conf, error) {
-
 	enhancedMode := viper.GetString("dns.enhanced-mode")
 	tproxyPort := viper.GetInt("tproxy-port")
 	dnsListen := viper.GetString("dns.listen")
