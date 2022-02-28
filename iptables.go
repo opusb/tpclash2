@@ -4,20 +4,8 @@ import (
 	"fmt"
 	"github.com/coreos/go-iptables/iptables"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
-	"net"
-	"strconv"
-
-	clsconfig "github.com/Dreamacro/clash/config"
-	clsconst "github.com/Dreamacro/clash/constant"
+	"os/user"
 )
-
-type iptablesConf struct {
-	DNSHost     string
-	DNSPort     string
-	TProxyPort  string
-	FakeIPRange string
-}
 
 var localCIDR = []string{
 	"0.0.0.0/8",
@@ -35,55 +23,40 @@ func newIPTables(p iptables.Protocol) (*iptables.IPTables, error) {
 	return iptables.New(iptables.IPFamily(p), iptables.Timeout(3))
 }
 
-func parseDNS() (*iptablesConf, error) {
-	logrus.Info("[iptables] loading clash config...")
-	cbs, err := ioutil.ReadFile(clashConfig)
+func createChain(ins *iptables.IPTables, table, chain string) error {
+	logrus.Infof("[iptables] checking if chain %s exists in table %s...", chain, table)
+	ok, err := ins.ChainExists(table, chain)
 	if err != nil {
-		return nil, fmt.Errorf("faile to load clash config: %w", err)
+		return fmt.Errorf("failed to check chain: %s, table: %s, error: %v", chain, table, err)
 	}
-	clsc, err := clsconfig.Parse(cbs)
-	if err != nil {
-		return nil, fmt.Errorf("faile to load clash config: %w", err)
+	if !ok {
+		logrus.Infof("chian %s not found, creating...", chain)
+		err = ins.NewChain(table, chain)
+		if err != nil {
+			return fmt.Errorf("failed to create chain: %s, error: %v", chain, err)
+		}
 	}
+	return nil
+}
 
-	if clsc.DNS.EnhancedMode != clsconst.DNSFakeIP {
-		return nil, fmt.Errorf("only support fake-ip dns mode")
+func applyLocalNetwork(ins *iptables.IPTables, table, chain string) error {
+	logrus.Infof("[iptables] checking chain %s/%s rules...", table, chain)
+	for _, cidr := range localCIDR {
+		logrus.Infof("append local cidr %s rule to %s/%s...", cidr, table, chain)
+		err := ins.AppendUnique(table, chain, "-d", cidr, "-j", actionReturn)
+		if err != nil {
+			return fmt.Errorf("failed to append local cidr rules: %v", err)
+		}
 	}
-
-	if clsc.General.TProxyPort < 1 {
-		return nil, fmt.Errorf("tproxy port in clash config is missing(tproxy-port)")
-	}
-
-	dnsHost, dnsPort, err := net.SplitHostPort(clsc.DNS.Listen)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse clash dns listen config: %w", err)
-	}
-
-	dport, err := strconv.Atoi(dnsPort)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse clash dns listen config: %w", err)
-	}
-
-	if dport < 1 {
-		return nil, fmt.Errorf("dns port in clash config is missing(dns.listen)")
-	}
-
-	return &iptablesConf{dnsHost, dnsPort, strconv.Itoa(clsc.General.TProxyPort), clsc.DNS.FakeIPRange.IPNet().String()}, nil
+	return nil
 }
 
 func applyIPTables() error {
-	/* Parser DNS config */
-
-	conf, err := parseDNS()
-	if err != nil {
-		return err
-	}
-
 	/* Create *iptables.IPTables */
 
 	ip4, err := newIPTables(iptables.ProtocolIPv4)
 	if err != nil {
-		return fmt.Errorf("faile to create ipv4 iptables instance: %w", err)
+		return fmt.Errorf("faile to create ipv4 iptables instance: %v", err)
 	}
 
 	/* Forward Local Network Rules */
@@ -111,19 +84,19 @@ func applyIPTables() error {
 	logrus.Info("[iptables] checking tproxy rules...")
 	err = ip4.AppendUnique(tableMangle, chainIP4, "-p", "tcp", "-j", actionTProxy, "--on-port", conf.TProxyPort, "--tproxy-mark", tproxyMark)
 	if err != nil {
-		return fmt.Errorf("failed to append tcp trpoxy rules: %w", err)
+		return fmt.Errorf("failed to append tcp trpoxy rules: %v", err)
 	}
 	err = ip4.AppendUnique(tableMangle, chainIP4, "-p", "udp", "-j", actionTProxy, "--on-port", conf.TProxyPort, "--tproxy-mark", tproxyMark)
 	if err != nil {
-		return fmt.Errorf("failed to append udp trpoxy rules: %w", err)
+		return fmt.Errorf("failed to append udp trpoxy rules: %v", err)
 	}
 	err = ip4.AppendUnique(tableMangle, chainIP4Local, "-p", "tcp", "-j", actionMark, "--set-mark", tproxyMark)
 	if err != nil {
-		return fmt.Errorf("failed to append tcp trpoxy rules: %w", err)
+		return fmt.Errorf("failed to append tcp trpoxy rules: %v", err)
 	}
 	err = ip4.AppendUnique(tableMangle, chainIP4Local, "-p", "udp", "-j", actionMark, "--set-mark", tproxyMark)
 	if err != nil {
-		return fmt.Errorf("failed to append tcp trpoxy rules: %w", err)
+		return fmt.Errorf("failed to append tcp trpoxy rules: %v", err)
 	}
 
 	/* DNS Rules */
@@ -141,7 +114,7 @@ func applyIPTables() error {
 	}
 	err = ip4.AppendUnique(tableNat, chainIP4DNS, dnsSpec...)
 	if err != nil {
-		return fmt.Errorf("failed to append dns rules: %w", err)
+		return fmt.Errorf("failed to append dns rules: %v", err)
 	}
 
 	/* TPClash Output Rules */
@@ -149,11 +122,11 @@ func applyIPTables() error {
 	logrus.Info("[iptables] checking tpclash output rules...")
 	err = ip4.AppendUnique(tableMangle, chainOutput, "-p", "tcp", "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
 	if err != nil {
-		return fmt.Errorf("failed to append dns rules: %w", err)
+		return fmt.Errorf("failed to append dns rules: %v", err)
 	}
 	err = ip4.AppendUnique(tableMangle, chainOutput, "-p", "udp", "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
 	if err != nil {
-		return fmt.Errorf("failed to append dns rules: %w", err)
+		return fmt.Errorf("failed to append dns rules: %v", err)
 	}
 
 	/* Fix ICMP */
@@ -161,7 +134,7 @@ func applyIPTables() error {
 	logrus.Info("[iptables] checking icmp fake rules...")
 	err = ip4.AppendUnique(tableNat, chainPreRouting, "-p", "icmp", "-d", conf.FakeIPRange, "-j", actionDNat, "--to-destination", "127.0.0.1")
 	if err != nil {
-		return fmt.Errorf("failed to append icmp fake rules: %w", err)
+		return fmt.Errorf("failed to append icmp fake rules: %v", err)
 	}
 
 	/* Apply Rules */
@@ -169,98 +142,86 @@ func applyIPTables() error {
 	logrus.Info("[iptables] apply all rules...")
 	err = ip4.DeleteIfExists(tableMangle, chainPreRouting, "-j", chainIP4)
 	if err != nil {
-		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %w", tableMangle, chainPreRouting, chainIP4, err)
+		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainPreRouting, chainIP4, err)
 	}
 	err = ip4.DeleteIfExists(tableMangle, chainOutput, "-j", chainIP4Local)
 	if err != nil {
-		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %w", tableMangle, chainOutput, chainIP4Local, err)
+		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
 	}
 
 	err = ip4.Insert(tableMangle, chainPreRouting, 0, "-j", chainIP4)
 	if err != nil {
-		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %w", tableMangle, chainPreRouting, chainIP4, err)
+		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableMangle, chainPreRouting, chainIP4, err)
 	}
 	err = ip4.Insert(tableMangle, chainOutput, 0, "-j", chainIP4Local)
 	if err != nil {
-		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %w", tableMangle, chainOutput, chainIP4Local, err)
+		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
 	}
 
-	return nil
-}
-
-func createChain(ins *iptables.IPTables, table, chain string) error {
-	logrus.Infof("[iptables] checking if chain %s exists in table %s...", chain, table)
-	ok, err := ins.ChainExists(table, chain)
-	if err != nil {
-		return fmt.Errorf("failed to check chain: %s, table: %s, error: %w", chain, table, err)
-	}
-	if !ok {
-		logrus.Infof("chian %s not found, creating...", chain)
-		err = ins.NewChain(table, chain)
-		if err != nil {
-			return fmt.Errorf("failed to create chain: %s, error: %w", chain, err)
-		}
-	}
-	return nil
-}
-
-func applyLocalNetwork(ins *iptables.IPTables, table, chain string) error {
-	logrus.Infof("[iptables] checking chain %s/%s rules...", table, chain)
-	for _, cidr := range localCIDR {
-		logrus.Infof("append local cidr %s rule to %s/%s...", cidr, table, chain)
-		err := ins.AppendUnique(table, chain, "-d", cidr, "-j", actionReturn)
-		if err != nil {
-			return fmt.Errorf("failed to append local cidr rules: %w", err)
-		}
-	}
 	return nil
 }
 
 func cleanIPTables() error {
 	logrus.Info("[iptables] clean rules...")
 
-	/* Parser DNS config */
-
-	conf, err := parseDNS()
-	if err != nil {
-		return err
-	}
-
 	/* Create *iptables.IPTables */
 
 	ip4, err := newIPTables(iptables.ProtocolIPv4)
 	if err != nil {
-		return fmt.Errorf("faile to create ipv4 iptables instance: %w", err)
+		return fmt.Errorf("faile to create ipv4 iptables instance: %v", err)
 	}
 
 	/* Clean iptables */
 
-	logrus.Infof("[iptables] clean %s/%s...", tableMangle, chainPreRouting)
-	err = ip4.DeleteIfExists(tableMangle, chainPreRouting, "-j", chainIP4)
+	ok, err := ip4.ChainExists(tableMangle, chainIP4)
 	if err != nil {
-		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %w", tableMangle, chainPreRouting, chainIP4, err)
+		return fmt.Errorf("failed to check chain %s/%s: %s", tableMangle, chainIP4, err)
 	}
 
-	logrus.Infof("[iptables] clean %s/%s...", tableMangle, chainOutput)
-	err = ip4.DeleteIfExists(tableMangle, chainOutput, "-j", chainIP4Local)
+	if ok {
+		logrus.Infof("[iptables] clean %s/%s...", tableMangle, chainPreRouting)
+		err = ip4.DeleteIfExists(tableMangle, chainPreRouting, "-j", chainIP4)
+		if err != nil {
+			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainPreRouting, chainIP4, err)
+		}
+	}
+
+	ok, err = ip4.ChainExists(tableMangle, chainIP4Local)
 	if err != nil {
-		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %w", tableMangle, chainOutput, chainIP4Local, err)
+		return fmt.Errorf("failed to check chain %s/%s: %s", tableMangle, chainIP4Local, err)
+	}
+
+	if ok {
+		logrus.Infof("[iptables] clean %s/%s...", tableMangle, chainOutput)
+		err = ip4.DeleteIfExists(tableMangle, chainOutput, "-j", chainIP4Local)
+		if err != nil {
+			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
+		}
 	}
 
 	logrus.Info("[iptables] clean icmp fake...")
 	err = ip4.DeleteIfExists(tableNat, chainPreRouting, "-p", "icmp", "-d", conf.FakeIPRange, "-j", actionDNat, "--to-destination", "127.0.0.1")
 	if err != nil {
-		return fmt.Errorf("failed to delete icmp fake rules: %w", err)
+		return fmt.Errorf("failed to delete icmp fake rules: %v", err)
 	}
 
-	logrus.Info("[iptables] clean tpclash output...")
-	err = ip4.DeleteIfExists(tableMangle, chainOutput, "-p", "tcp", "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
+	u, err := user.Lookup(clashUser)
 	if err != nil {
-		return fmt.Errorf("failed to delete tpclash output rules: %w", err)
+		if _, ok := err.(user.UnknownUserError); !ok {
+			return fmt.Errorf("failed to query os user: %v", err)
+		}
 	}
-	err = ip4.DeleteIfExists(tableMangle, chainOutput, "-p", "udp", "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
-	if err != nil {
-		return fmt.Errorf("failed to delete tpclash output rules: %w", err)
+
+	if u != nil {
+		logrus.Info("[iptables] clean tpclash output...")
+		err = ip4.DeleteIfExists(tableMangle, chainOutput, "-p", "tcp", "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
+		if err != nil {
+			return fmt.Errorf("failed to delete tpclash output rules: %v", err)
+		}
+		err = ip4.DeleteIfExists(tableMangle, chainOutput, "-p", "udp", "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
+		if err != nil {
+			return fmt.Errorf("failed to delete tpclash output rules: %v", err)
+		}
 	}
 
 	logrus.Info("[iptables] clean dns...")
@@ -272,7 +233,7 @@ func cleanIPTables() error {
 	}
 	err = ip4.DeleteIfExists(tableNat, chainIP4DNS, dnsSpec...)
 	if err != nil {
-		return fmt.Errorf("failed to delete dns rules: %w", err)
+		return fmt.Errorf("failed to delete dns rules: %v", err)
 	}
 
 	return nil

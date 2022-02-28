@@ -1,32 +1,28 @@
 package main
 
 import (
-	"errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"runtime"
 )
 
 var clashHome string
 var clashConfig string
 var clashUI string
-var clashUIAddr string
+
+var conf *Conf
 
 var rootCmd = &cobra.Command{
 	Use:   "tpclash",
 	Short: "Transparent proxy tool for Clash",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if runtime.GOOS != "linux" {
-			return errors.New("only support linux system")
-		}
-		return nil
-	},
 }
 
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run tpclash",
 	Run: func(cmd *cobra.Command, args []string) {
+		copyFiles()
 		fix()
 		run()
 	},
@@ -48,23 +44,56 @@ var cleanCmd = &cobra.Command{
 	},
 }
 
-func init() {
-	// init logrus
-	logrus.SetLevel(logrus.DebugLevel)
-	logrus.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "2006-05-04 15:02:01",
-		PadLevelText:    true,
-	})
+var extractCmd = &cobra.Command{
+	Use:   "extract",
+	Short: "Extract embed files",
+	Run: func(cmd *cobra.Command, args []string) {
+		copyFiles()
+	},
+}
 
+func init() {
 	rootCmd.PersistentFlags().StringVarP(&clashHome, "home", "d", "/data/clash", "clash home dir")
 	rootCmd.PersistentFlags().StringVarP(&clashConfig, "config", "c", "/etc/clash.yaml", "clash config path")
 	rootCmd.PersistentFlags().StringVarP(&clashUI, "ui", "u", "official", "clash dashboard(official/yacd)")
-	rootCmd.PersistentFlags().StringVarP(&clashUIAddr, "listen", "l", "0.0.0.0:9527", "clash dashboard listen address")
 
-	rootCmd.AddCommand(fixCmd, runCmd, cleanCmd)
+	rootCmd.AddCommand(fixCmd, runCmd, cleanCmd, extractCmd)
 }
 
 func main() {
+	cobra.OnInitialize(func() {
+		// init logrus
+		logrus.SetLevel(logrus.InfoLevel)
+		logrus.SetFormatter(&logrus.TextFormatter{
+			FullTimestamp:   true,
+			TimestampFormat: "2006-01-02 15:04:05",
+			PadLevelText:    true,
+		})
+
+		// os check
+		if runtime.GOOS != "linux" {
+			logrus.Fatal("only support linux system")
+		}
+
+		// init config
+		viper.SetConfigFile(clashConfig)
+		viper.SetEnvPrefix("TPCLASH")
+		viper.AutomaticEnv()
+
+		logrus.Info("[main] load clash config...")
+		err := viper.ReadInConfig()
+		if err != nil {
+			logrus.Fatalf("failed to load config: %v", err)
+		}
+		conf, err = parseConf()
+		if err != nil {
+			logrus.Fatal(err)
+		}
+
+		// copy static files
+		mkHomeDir()
+		//copyBin()
+		//copyUI()
+	})
 	cobra.CheckErr(rootCmd.Execute())
 }
