@@ -24,7 +24,7 @@ func newIPTables(p iptables.Protocol) (*iptables.IPTables, error) {
 }
 
 func createChain(ins *iptables.IPTables, table, chain string) error {
-	logrus.Infof("[iptables] checking if chain %s exists in table %s...", chain, table)
+	logrus.Debugf("[iptables] checking if chain %s exists in table %s...", chain, table)
 	ok, err := ins.ChainExists(table, chain)
 	if err != nil {
 		return fmt.Errorf("failed to check chain: %s, table: %s, error: %v", chain, table, err)
@@ -40,7 +40,7 @@ func createChain(ins *iptables.IPTables, table, chain string) error {
 }
 
 func applyLocalNetwork(ins *iptables.IPTables, table, chain string) error {
-	logrus.Infof("[iptables] checking chain %s/%s rules...", table, chain)
+	logrus.Debugf("[iptables] checking chain %s/%s rules...", table, chain)
 	for _, cidr := range localCIDR {
 		logrus.Debugf("[iptables] append local cidr %s rule to %s/%s...", cidr, table, chain)
 		err := ins.AppendUnique(table, chain, "-d", cidr, "-j", actionReturn)
@@ -81,7 +81,7 @@ func applyIPTables() error {
 
 	/* TProxy Rules */
 
-	logrus.Info("[iptables] checking tproxy rules...")
+	logrus.Debug("[iptables] checking tproxy rules...")
 	err = ip4.AppendUnique(tableMangle, chainIP4, "-p", "tcp", "-j", actionTProxy, "--on-port", conf.TProxyPort, "--tproxy-mark", tproxyMark)
 	if err != nil {
 		return fmt.Errorf("failed to append tcp trpoxy rules: %v", err)
@@ -105,7 +105,7 @@ func applyIPTables() error {
 		return err
 	}
 
-	logrus.Infof("[iptables] checking chain %s/%s rules...", tableNat, chainIP4DNS)
+	logrus.Debugf("[iptables] checking chain %s/%s rules...", tableNat, chainIP4DNS)
 	err = ip4.AppendUnique(tableNat, chainIP4DNS, "-p", "udp", "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort)
 	if err != nil {
 		return fmt.Errorf("failed to append dns rules: %v", err)
@@ -113,7 +113,7 @@ func applyIPTables() error {
 
 	/* TPClash Output Rules */
 
-	logrus.Info("[iptables] checking tpclash output rules...")
+	logrus.Debug("[iptables] checking tpclash output rules...")
 	err = ip4.AppendUnique(tableMangle, chainOutput, "-p", "tcp", "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
 	if err != nil {
 		return fmt.Errorf("failed to append dns rules: %v", err)
@@ -125,7 +125,7 @@ func applyIPTables() error {
 
 	/* Fix ICMP */
 
-	logrus.Info("[iptables] checking icmp fake rules...")
+	logrus.Debug("[iptables] checking icmp fake rules...")
 	err = ip4.AppendUnique(tableNat, chainPreRouting, "-p", "icmp", "-d", conf.FakeIPRange, "-j", actionDNat, "--to-destination", "127.0.0.1")
 	if err != nil {
 		return fmt.Errorf("failed to append icmp fake rules: %v", err)

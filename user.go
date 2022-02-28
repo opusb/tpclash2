@@ -25,7 +25,7 @@ func checkUser() bool {
 }
 
 func chownR(p string) error {
-	bs, err := exec.Command("chown", "-R", clashUser, clashUser, p).CombinedOutput()
+	bs, err := exec.Command("chown", "-R", clashUser+":"+clashUser, p).CombinedOutput()
 	if err != nil {
 		logrus.Fatalf("failed to change dir owner: %s, %v", bs, err)
 	}

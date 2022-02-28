@@ -41,11 +41,12 @@ func copyFiles() {
 		logrus.Fatal(err)
 	}
 
-	err = chownR(clashHome)
+	err = chmod(filepath.Join(clashHome, "xclash"))
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	err = chmod(filepath.Join(clashHome, "xclash"))
+
+	err = chownR(clashHome)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -53,9 +54,15 @@ func copyFiles() {
 
 func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) error {
 	for _, dirEntry := range dirEntries {
+		info, err := dirEntry.Info()
+		if err != nil {
+			return err
+		}
+		perm := info.Mode().Perm()
+
 		if dirEntry.IsDir() {
-			logrus.Debugf("[static] extract -> %s", filepath.Join(target, dirEntry.Name()))
-			err := os.MkdirAll(filepath.Join(target, dirEntry.Name()), dirEntry.Type())
+			logrus.Debugf("[static] extract -> %s %s", filepath.Join(target, dirEntry.Name()), perm.String())
+			err := os.MkdirAll(filepath.Join(target, dirEntry.Name()), perm)
 			if err != nil {
 				return err
 			}
@@ -74,8 +81,8 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) erro
 			}
 			defer func() { _ = sf.Close() }()
 
-			logrus.Debugf("[static] extract -> %s", filepath.Join(target, dirEntry.Name()))
-			df, err := os.OpenFile(filepath.Join(target, dirEntry.Name()), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, dirEntry.Type())
+			logrus.Debugf("[static] extract -> %s %s", filepath.Join(target, dirEntry.Name()), perm.String())
+			df, err := os.OpenFile(filepath.Join(target, dirEntry.Name()), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, perm)
 			if err != nil {
 				return err
 			}

@@ -17,7 +17,7 @@ import (
 )
 
 func run() {
-	logrus.Info("starting clash...")
+	logrus.Info("[main] starting clash...")
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
@@ -31,7 +31,10 @@ func run() {
 		uid, _ := strconv.Atoi(u.Uid)
 		gid, _ := strconv.Atoi(u.Gid)
 
-		cmd := exec.Command(filepath.Join(clashHome, "xclash"), "-f", clashConfig, "-d", clashHome, "-ext-ui", clashUI)
+		cmds := []string{filepath.Join(clashHome, "xclash"), "-f", clashConfig, "-d", clashHome, "-ext-ui", filepath.Join(clashHome, clashUI)}
+		logrus.Infof("[clash] running cmds: %v", cmds)
+
+		cmd := exec.Command(cmds[0], cmds[1:]...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.SysProcAttr = &syscall.SysProcAttr{

@@ -14,7 +14,7 @@ func applySysctl() error {
 		return fmt.Errorf("failed to set net.ipv4.ip_forward: %v", err)
 	}
 
-	logrus.Info("[sysctl] net.ipv4.conf.all.route_localnet...")
+	logrus.Info("[sysctl] enable net.ipv4.conf.all.route_localnet...")
 	err = sysctl.Set("net.ipv4.conf.all.route_localnet", "1")
 	if err != nil {
 		return fmt.Errorf("failed to set net.ipv4.conf.all.route_localnet: %v", err)
