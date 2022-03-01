@@ -24,6 +24,24 @@ TPClash 只有一个二进制文件, 直接从 Release 页面下载二进制文�
 ./tpclash run -c /etc/clash.yaml
 ```
 
+**TPClash 对 Clash 配置文件有以下要求(端口可以更换, TPClash 会自适应):**
+
+```yaml
+# 需要开启 tproxy 端口
+tproxy-port: 7893
+
+# 开启 DNS 配置, 且使用 fake-ip 模式
+# DNS 监听地址至少保证 127.0.0.1 可达
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  default-nameserver:
+    - 114.114.114.114
+  nameserver:
+    - 114.114.114.114
+```
+
 **初次使用的用户推荐命令行执行, 如果出现规则冲突导致断网情况(理论上不会)可以简单的通过重启解决. TPClash 支持的所有命令可以通过 `--help` 查看:**
 
 ```sh
