@@ -1,0 +1,167 @@
+version: '3'
+
+tasks:
+  clean:
+    cmds:
+      - rm -rf build static
+      - mkdir -p build/{yacd,official} static
+  build-dashboard:
+    cmds:
+      - curl -fsSL https://github.com/STASH-NETWORKS-LIMITED/yacd/tarball/master -o
+      - defer: rm -f build/yacd.tgz
+      - curl -fsSL https://github.com/Dreamacro/clash-dashboard/tarball/master -o build/official.tgz
+      - defer: rm -f build/official.tgz
+      - tar -zxf build/yacd.tgz --strip-components 1 -C build/yacd
+      - defer: rm -rf build/yacd
+      - tar -zxf build/official.tgz --strip-components 1 -C build/official
+      - defer: rm -rf build/official
+      - (cd build/yacd && yarn install > /dev/null 2>&1 && yarn build > /dev/null 2>&1)
+      - (cd build/official && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
+      - cp -r build/yacd/public static/yacd
+      - cp -r build/official/dist static/official
+  download-clash:
+    vars:
+      CLASH_URL:
+        sh: curl -fsSL https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq '.assets[].browser_download_url | select (. | test("clash-{{.TASK}}-.*gz"))'
+    cmds:
+      - rm -rf build/clash-{{.TASK}}.gz build/clash-{{.TASK}} static/xclash
+      - curl -fsSL {{.CLASH_URL}} -o build/clash-{{.TASK}}.gz
+      - gzip -d build/clash-{{.TASK}}.gz
+      - mv build/clash-{{.TASK}} static/xclash
+      - chmod +x static/xclash
+  build-tpclash:
+    label: build-{{.TASK}}
+    cmds:
+      - GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} go build -trimpath -o build/tpclash-{{.TASK}} -ldflags "-w -s"
+
+  linux-386:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: 386
+        }
+  linux-amd64:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: amd64
+        }
+  linux-armv5:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: arm,
+          GOARM: 5
+        }
+  linux-armv6:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: arm,
+          GOARM: 6
+        }
+  linux-armv7:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: arm,
+          GOARM: 7
+        }
+  linux-armv8:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: arm64
+        }
+  linux-mips-hardfloat:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: mips,
+          GOMIPS: hardfloat
+        }
+  linux-mipsle-softfloat:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: mipsle,
+          GOMIPS: softfloat
+        }
+  linux-mipsle-hardfloat:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: mipsle,
+          GOMIPS: hardfloat
+        }
+  linux-mips64:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: mips64
+        }
+  linux-mips64le:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: mips64le
+        }
+  default:
+    cmds:
+      - task: clean
+      - task: build-dashboard
+      - task: linux-386
+      - task: linux-amd64
+      - task: linux-armv5
+      - task: linux-armv6
+      - task: linux-armv7
+      - task: linux-armv8
+      - task: linux-mips-hardfloat
+      - task: linux-mipsle-softfloat
+      - task: linux-mipsle-hardfloat
+      - task: linux-mips64
+      - task: linux-mips64le

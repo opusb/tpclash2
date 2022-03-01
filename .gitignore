@@ -273,4 +273,5 @@ $RECYCLE.BIN/
 
 
 static/
+build/
 tpclash
