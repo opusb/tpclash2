@@ -7,7 +7,7 @@ tasks:
       - mkdir -p build/{yacd,official} static
   build-dashboard:
     cmds:
-      - curl -fsSL https://github.com/STASH-NETWORKS-LIMITED/yacd/tarball/master -o
+      - curl -fsSL https://github.com/STASH-NETWORKS-LIMITED/yacd/tarball/master -o build/yacd.tgz
       - defer: rm -f build/yacd.tgz
       - curl -fsSL https://github.com/Dreamacro/clash-dashboard/tarball/master -o build/official.tgz
       - defer: rm -f build/official.tgz
