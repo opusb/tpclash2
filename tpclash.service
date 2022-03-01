@@ -1,0 +1,13 @@
+[Unit]
+Description=TPClash
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Restart=on-failure
+
+ExecStart=/usr/bin/tpclash run
+
+[Install]
+WantedBy=multi-user.target
