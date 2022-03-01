@@ -163,99 +163,97 @@ func applyIPTables() error {
 	return nil
 }
 
-func cleanIPTables() error {
+func cleanIPTables() {
 	logrus.Info("[iptables] clean rules...")
 
 	/* Create *iptables.IPTables */
 
 	ip4, err := newIPTables(iptables.ProtocolIPv4)
 	if err != nil {
-		return fmt.Errorf("faile to create ipv4 iptables instance: %v", err)
+		logrus.Errorf("faile to create ipv4 iptables instance: %v", err)
 	}
 
 	/* Clean iptables */
 
 	ok, err := ip4.ChainExists(tableMangle, chainIP4)
 	if err != nil {
-		return fmt.Errorf("failed to check chain %s/%s: %s", tableMangle, chainIP4, err)
+		logrus.Errorf("failed to check chain %s/%s: %s", tableMangle, chainIP4, err)
 	}
 
 	if ok {
 		logrus.Debugf("[iptables] clean %s/%s...", tableMangle, chainPreRouting)
 		err = ip4.DeleteIfExists(tableMangle, chainPreRouting, "-j", chainIP4)
 		if err != nil {
-			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainPreRouting, chainIP4, err)
+			logrus.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainPreRouting, chainIP4, err)
 		}
 
 		err = ip4.ClearAndDeleteChain(tableMangle, chainIP4)
 		if err != nil {
-			return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableMangle, chainIP4, err)
+			logrus.Errorf("failed to delete chain: %s/%s, error: %v", tableMangle, chainIP4, err)
 		}
 	}
 
 	ok, err = ip4.ChainExists(tableMangle, chainIP4Local)
 	if err != nil {
-		return fmt.Errorf("failed to check chain %s/%s: %s", tableMangle, chainIP4Local, err)
+		logrus.Errorf("failed to check chain %s/%s: %s", tableMangle, chainIP4Local, err)
 	}
 
 	if ok {
 		logrus.Debugf("[iptables] clean %s/%s...", tableMangle, chainOutput)
 		err = ip4.DeleteIfExists(tableMangle, chainOutput, "-j", chainIP4Local)
 		if err != nil {
-			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
+			logrus.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
 		}
 		err = ip4.ClearAndDeleteChain(tableMangle, chainIP4Local)
 		if err != nil {
-			return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableMangle, chainIP4Local, err)
+			logrus.Errorf("failed to delete chain: %s/%s, error: %v", tableMangle, chainIP4Local, err)
 		}
 	}
 
 	ok, err = ip4.ChainExists(tableNat, chainIP4DNS)
 	if err != nil {
-		return fmt.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNS, err)
+		logrus.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNS, err)
 	}
 
 	if ok {
 		logrus.Debug("[iptables] clean dns...")
 		err = ip4.DeleteIfExists(tableNat, chainPreRouting, "-j", chainIP4DNS)
 		if err != nil {
-			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
+			logrus.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
 		}
 		err = ip4.ClearAndDeleteChain(tableNat, chainIP4DNS)
 		if err != nil {
-			return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
+			logrus.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
 		}
 	}
 
 	ok, err = ip4.ChainExists(tableNat, chainIP4DNS)
 	if err != nil {
-		return fmt.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNS, err)
+		logrus.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNS, err)
 	}
 	if ok {
 		logrus.Debugf("[iptables] clean %s/%s...", tableNat, chainIP4DNS)
 		err = ip4.ClearAndDeleteChain(tableNat, chainIP4DNS)
 		if err != nil {
-			return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
+			logrus.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
 		}
 	}
 
 	logrus.Debug("[iptables] clean icmp fake...")
 	err = ip4.DeleteIfExists(tableNat, chainPreRouting, "-p", "icmp", "-d", conf.FakeIPRange, "-j", actionDNat, "--to-destination", "127.0.0.1")
 	if err != nil {
-		return fmt.Errorf("failed to delete icmp fake rules: %v", err)
+		logrus.Errorf("failed to delete icmp fake rules: %v", err)
 	}
 
-	if !checkUser() {
+	if checkUser() {
 		logrus.Debug("[iptables] clean tpclash output...")
 		err = ip4.DeleteIfExists(tableMangle, chainOutput, "-p", "tcp", "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
 		if err != nil {
-			return fmt.Errorf("failed to delete tpclash output rules: %v", err)
+			logrus.Errorf("failed to delete tpclash output rules: %v", err)
 		}
 		err = ip4.DeleteIfExists(tableMangle, chainOutput, "-p", "udp", "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
 		if err != nil {
-			return fmt.Errorf("failed to delete tpclash output rules: %v", err)
+			logrus.Errorf("failed to delete tpclash output rules: %v", err)
 		}
 	}
-
-	return nil
 }

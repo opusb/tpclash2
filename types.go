@@ -11,6 +11,7 @@ import (
 )
 
 type Conf struct {
+	Debug       bool
 	DNSHost     string
 	DNSPort     string
 	TProxyPort  string
@@ -19,6 +20,7 @@ type Conf struct {
 }
 
 func parseConf() (*Conf, error) {
+	debug := viper.GetString("log-level")
 	enhancedMode := viper.GetString("dns.enhanced-mode")
 	tproxyPort := viper.GetInt("tproxy-port")
 	dnsListen := viper.GetString("dns.listen")
@@ -56,6 +58,7 @@ func parseConf() (*Conf, error) {
 	}
 
 	return &Conf{
+		Debug:       strings.ToLower(debug) == "debug",
 		DNSHost:     dnsHost,
 		DNSPort:     dnsPort,
 		TProxyPort:  strconv.Itoa(tproxyPort),

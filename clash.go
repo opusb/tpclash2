@@ -19,45 +19,11 @@ import (
 func run() {
 	logrus.Info("[main] starting clash...")
 
-	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer cancel()
 
-	go func() {
-		u, err := user.Lookup(clashUser)
-		if err != nil {
-			logrus.Fatalf("failed to get tpclash user: %v", err)
-		}
+	copyFiles()
 
-		uid, _ := strconv.Atoi(u.Uid)
-		gid, _ := strconv.Atoi(u.Gid)
-
-		cmds := []string{filepath.Join(clashHome, "xclash"), "-f", clashConfig, "-d", clashHome, "-ext-ui", filepath.Join(clashHome, clashUI)}
-		logrus.Debugf("[clash] running cmds: %v", cmds)
-
-		cmd := exec.Command(cmds[0], cmds[1:]...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Credential: &syscall.Credential{
-				Uid: uint32(uid),
-				Gid: uint32(gid),
-			},
-			AmbientCaps: []uintptr{CAP_NET_BIND_SERVICE, CAP_NET_ADMIN, CAP_NET_RAW},
-		}
-
-		err = cmd.Run()
-		select {
-		case <-ctx.Done():
-		default:
-			logrus.Fatal(err)
-		}
-	}()
-
-	<-ctx.Done()
-	logrus.Info("TPClash exit...")
-}
-
-func fix() {
 	if err := applySysctl(); err != nil {
 		logrus.Fatalf("Fix Sysctl Error: %s", err)
 	}
@@ -69,14 +35,42 @@ func fix() {
 	if err := applyIPTables(); err != nil {
 		logrus.Fatalf("Fix IPTables Error: %s", err)
 	}
-}
 
-func clean() {
-	if err := cleanIPTables(); err != nil {
-		logrus.Fatalf("Clean IPTables Error: %v", err)
+	u, err := user.Lookup(clashUser)
+	if err != nil {
+		logrus.Fatalf("failed to get tpclash user: %v", err)
 	}
 
-	if err := cleanRoute(); err != nil {
-		logrus.Fatalf("Clean Route Error: %v", err)
+	uid, _ := strconv.Atoi(u.Uid)
+	gid, _ := strconv.Atoi(u.Gid)
+
+	cmds := []string{filepath.Join(clashHome, "xclash"), "-f", clashConfig, "-d", clashHome, "-ext-ui", filepath.Join(clashHome, clashUI)}
+	logrus.Debugf("[clash] running cmds: %v", cmds)
+
+	cmd := exec.Command(cmds[0], cmds[1:]...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Credential: &syscall.Credential{
+			Uid: uint32(uid),
+			Gid: uint32(gid),
+		},
+		AmbientCaps: []uintptr{CAP_NET_BIND_SERVICE, CAP_NET_ADMIN, CAP_NET_RAW},
 	}
+
+	if err = cmd.Start(); err != nil {
+		logrus.Error(err)
+		cancel()
+	}
+
+	<-ctx.Done()
+
+	cleanIPTables()
+	cleanRoute()
+
+	if err = cmd.Process.Kill(); err != nil {
+		logrus.Error(err)
+	}
+
+	logrus.Info("TPClash exit...")
 }

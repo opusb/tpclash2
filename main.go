@@ -11,7 +11,6 @@ import (
 var clashHome string
 var clashConfig string
 var clashUI string
-var debug bool
 
 var commit string
 
@@ -27,17 +26,7 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run tpclash",
 	Run: func(cmd *cobra.Command, args []string) {
-		copyFiles()
-		fix()
 		run()
-	},
-}
-
-var fixCmd = &cobra.Command{
-	Use:   "fix",
-	Short: "Fix transparent proxy",
-	Run: func(cmd *cobra.Command, args []string) {
-		fix()
 	},
 }
 
@@ -45,7 +34,8 @@ var cleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Clean tpclash iptables and route config",
 	Run: func(cmd *cobra.Command, args []string) {
-		clean()
+		cleanIPTables()
+		cleanRoute()
 	},
 }
 
@@ -71,9 +61,8 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&clashHome, "home", "d", "/data/clash", "clash home dir")
 	rootCmd.PersistentFlags().StringVarP(&clashConfig, "config", "c", "/etc/clash.yaml", "clash config path")
 	rootCmd.PersistentFlags().StringVarP(&clashUI, "ui", "u", "yacd", "clash dashboard(official/yacd)")
-	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug log")
 
-	rootCmd.AddCommand(runCmd, fixCmd, cleanCmd, extractCmd, installCmd)
+	rootCmd.AddCommand(runCmd, cleanCmd, extractCmd, installCmd)
 }
 
 func main() {
@@ -82,12 +71,6 @@ func main() {
 
 func tpClashInit() {
 	// init logrus
-	if debug {
-		logrus.SetLevel(logrus.DebugLevel)
-	} else {
-		logrus.SetLevel(logrus.InfoLevel)
-	}
-
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02 15:04:05",
@@ -112,6 +95,10 @@ func tpClashInit() {
 	conf, err = parseConf()
 	if err != nil {
 		logrus.Fatal(err)
+	}
+
+	if conf.Debug {
+		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	// copy static files

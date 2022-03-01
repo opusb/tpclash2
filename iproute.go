@@ -24,18 +24,16 @@ func applyRoute() error {
 	return nil
 }
 
-func cleanRoute() error {
+func cleanRoute() {
 	logrus.Info("[route] clean ip rules...")
 	bs, err := exec.Command("ip", "rule", "del", "fwmark", tproxyMark, "table", tproxyMark).CombinedOutput()
-	if err != nil && !strings.Contains(string(bs), "No such file or directory") {
-		return fmt.Errorf("failed to clean route: %s, %v", bs, err)
+	if err != nil {
+		logrus.Warnf("failed to clean route: %s, %v", strings.TrimSpace(string(bs)), err)
 	}
 
 	logrus.Info("[route] clean ip routes...")
 	bs, err = exec.Command("ip", "route", "del", "local", "0.0.0.0/0", "dev", "lo", "table", tproxyMark).CombinedOutput()
-	if err != nil && !strings.Contains(string(bs), "No such process") {
-		return fmt.Errorf("failed to clean route: %s, %v", bs, err)
+	if err != nil {
+		logrus.Warnf("failed to clean route: %s, %v", strings.TrimSpace(string(bs)), err)
 	}
-
-	return nil
 }
