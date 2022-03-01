@@ -68,8 +68,10 @@ func run() {
 	cleanIPTables()
 	cleanRoute()
 
-	if err = cmd.Process.Kill(); err != nil {
-		logrus.Error(err)
+	if cmd.Process != nil {
+		if err = cmd.Process.Kill(); err != nil {
+			logrus.Error(err)
+		}
 	}
 
 	logrus.Info("TPClash exit...")

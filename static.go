@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -75,6 +76,10 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) erro
 				return err
 			}
 		} else {
+			if !mmdb && strings.Contains(dirEntry.Name(), "Country.mmdb") {
+				logrus.Warn("[static] skip Country.mmdb...")
+				continue
+			}
 			sf, err := static.Open(filepath.Join(origin, dirEntry.Name()))
 			if err != nil {
 				return err

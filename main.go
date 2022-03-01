@@ -11,6 +11,7 @@ import (
 var clashHome string
 var clashConfig string
 var clashUI string
+var mmdb bool
 
 var commit string
 
@@ -54,6 +55,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&clashHome, "home", "d", "/data/clash", "clash home dir")
 	rootCmd.PersistentFlags().StringVarP(&clashConfig, "config", "c", "/etc/clash.yaml", "clash config path")
 	rootCmd.PersistentFlags().StringVarP(&clashUI, "ui", "u", "yacd", "clash dashboard(official/yacd)")
+	rootCmd.PersistentFlags().BoolVar(&mmdb, "mmdb", true, "extract Country.mmdb file")
 
 	rootCmd.AddCommand(runCmd, cleanCmd, extractCmd)
 }
