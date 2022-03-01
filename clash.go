@@ -63,6 +63,8 @@ func run() {
 		cancel()
 	}
 
+	logrus.Info("[main] 🍄 提莫队长正在待命...")
+
 	<-ctx.Done()
 
 	cleanIPTables()
