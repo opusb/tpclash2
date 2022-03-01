@@ -4,7 +4,7 @@ tasks:
   clean:
     cmds:
       - rm -rf build static
-      - mkdir -p build/{yacd,official} static
+      - mkdir -p build/{yacd,official} static/ruleset
   build-dashboard:
     cmds:
       - curl -fsSL https://github.com/STASH-NETWORKS-LIMITED/yacd/tarball/master -o build/yacd.tgz
@@ -19,6 +19,25 @@ tasks:
       - (cd build/official && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
       - cp -r build/yacd/public static/yacd
       - cp -r build/official/dist static/official
+  download-ruleset:
+    cmds:
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt -o static/ruleset/reject.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt -o static/ruleset/icloud.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt -o static/ruleset/apple.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt -o static/ruleset/google.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt -o static/ruleset/proxy.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt -o static/ruleset/direct.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt -o static/ruleset/private.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt -o static/ruleset/gfw.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/greatfire.txt -o static/ruleset/greatfire.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/tld-not-cn.txt -o static/ruleset/tld-not-cn.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt -o static/ruleset/telegramcidr.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt -o static/ruleset/cncidr.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt -o static/ruleset/lancidr.yaml
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt -o static/ruleset/applications.yaml
+  download-mmdb:
+    cmds:
+      - curl -fsSL https://cdn.jsdelivr.net/gh/Hackl0us/GeoIP2-CN@release/Country.mmdb -o static/Country.mmdb
   download-clash:
     vars:
       CLASH_URL:
@@ -159,6 +178,8 @@ tasks:
     cmds:
       - task: clean
       - task: build-dashboard
+      - task: download-ruleset
+      - task: download-mmdb
       - task: linux-386
       - task: linux-amd64
       - task: linux-armv5
