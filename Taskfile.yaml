@@ -31,9 +31,14 @@ tasks:
       - chmod +x static/xclash
   build-tpclash:
     label: build-{{.TASK}}
+    vars:
+      TPCLASH_COMMIT:
+        sh: git rev-parse HEAD
     cmds:
-      - GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} go build -trimpath -o build/tpclash-{{.TASK}} -ldflags "-w -s"
-
+      - |
+        GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
+        go build -trimpath -o build/tpclash-{{.TASK}} -ldflags \
+        "-w -s -X main.commit={{.TPCLASH_COMMIT}}"
   linux-386:
     cmds:
       - task: download-clash

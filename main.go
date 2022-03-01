@@ -13,11 +13,14 @@ var clashConfig string
 var clashUI string
 var debug bool
 
+var commit string
+
 var conf *Conf
 
 var rootCmd = &cobra.Command{
-	Use:   "tpclash",
-	Short: "Transparent proxy tool for Clash",
+	Use:     "tpclash",
+	Short:   "Transparent proxy tool for Clash",
+	Version: commit,
 }
 
 var runCmd = &cobra.Command{
