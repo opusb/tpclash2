@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -63,8 +64,8 @@ func run() {
 		cancel()
 	}
 
+	<-time.After(3 * time.Second)
 	logrus.Info("[main] 🍄 提莫队长正在待命...")
-
 	<-ctx.Done()
 
 	cleanIPTables()
