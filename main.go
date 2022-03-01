@@ -47,13 +47,6 @@ var extractCmd = &cobra.Command{
 	},
 }
 
-var installCmd = &cobra.Command{
-	Use:   "install",
-	Short: "Install as service",
-	Run: func(cmd *cobra.Command, args []string) {
-	},
-}
-
 func init() {
 	cobra.EnableCommandSorting = false
 	cobra.OnInitialize(tpClashInit)
@@ -62,7 +55,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&clashConfig, "config", "c", "/etc/clash.yaml", "clash config path")
 	rootCmd.PersistentFlags().StringVarP(&clashUI, "ui", "u", "yacd", "clash dashboard(official/yacd)")
 
-	rootCmd.AddCommand(runCmd, cleanCmd, extractCmd, installCmd)
+	rootCmd.AddCommand(runCmd, cleanCmd, extractCmd)
 }
 
 func main() {
