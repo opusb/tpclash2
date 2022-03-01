@@ -44,6 +44,7 @@ Flags:
   -c, --config string   clash config path (default "/etc/clash.yaml")
   -h, --help            help for tpclash
   -d, --home string     clash home dir (default "/data/clash")
+      --mmdb            extract Country.mmdb file (default true)
   -u, --ui string       clash dashboard(official/yacd) (default "yacd")
 
 Use "tpclash [command] --help" for more information about a command.
@@ -80,3 +81,10 @@ git clone https://github.com/mritd/tpclash.git
 cd tpclash
 task # go-task 安装成功后会包含此命令
 ```
+
+## 五、其他说明
+
+TPClash 默认释放的文件包含了 [Loyalsoldier/clash-rules](https://github.com/Loyalsoldier/clash-rules) 相关文件, 可在规则中直接使用;
+
+**TPClash 同时也释放了 [Hackl0us/GeoIP2-CN](https://github.com/Hackl0us/GeoIP2-CN) 项目的 Country.mmdb 文件, 该 GeoIP 数据库
+仅包含中国大陆地区 IP, 所以如果使用 `GEOIP, US, PROXY` 等其他国家规则会失败; 可通过 `--mmdb=false` 禁止此行为(选项中间一定要有 `=`).**
