@@ -59,7 +59,7 @@ func applyIPTables() error {
 		return fmt.Errorf("faile to create ipv4 iptables instance: %v", err)
 	}
 
-	/* Forward Local Network Rules */
+	/* Forward Network Rules */
 
 	if err = createChain(ip4, tableMangle, chainIP4); err != nil {
 		return err
@@ -69,7 +69,12 @@ func applyIPTables() error {
 		return err
 	}
 
-	/* Gateway Local Network Rules */
+	err = ip4.AppendUnique(tableMangle, chainIP4, "-p", "udp", "--dport", "53", "-j", actionReturn)
+	if err != nil {
+		return fmt.Errorf("failed to append forward dns skip rules: %v", err)
+	}
+
+	/* Gateway Network Rules */
 
 	if err = createChain(ip4, tableMangle, chainIP4Local); err != nil {
 		return err
@@ -77,6 +82,11 @@ func applyIPTables() error {
 
 	if err = applyLocalNetwork(ip4, tableMangle, chainIP4Local); err != nil {
 		return err
+	}
+
+	err = ip4.AppendUnique(tableMangle, chainIP4Local, "-p", "udp", "--dport", "53", "-j", actionReturn)
+	if err != nil {
+		return fmt.Errorf("failed to append gateway dns skip rules: %v", err)
 	}
 
 	/* TProxy Rules */
@@ -104,9 +114,21 @@ func applyIPTables() error {
 	if err = createChain(ip4, tableNat, chainIP4DNS); err != nil {
 		return err
 	}
-
 	logrus.Debugf("[iptables] checking chain %s/%s rules...", tableNat, chainIP4DNS)
 	err = ip4.AppendUnique(tableNat, chainIP4DNS, "-p", "udp", "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort)
+	if err != nil {
+		return fmt.Errorf("failed to append dns rules: %v", err)
+	}
+
+	if err = createChain(ip4, tableNat, chainIP4DNSLocal); err != nil {
+		return err
+	}
+	logrus.Debugf("[iptables] checking chain %s/%s rules...", tableNat, chainIP4DNSLocal)
+	err = ip4.AppendUnique(tableNat, chainIP4DNSLocal, "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
+	if err != nil {
+		return fmt.Errorf("failed to append dns rules: %v", err)
+	}
+	err = ip4.AppendUnique(tableNat, chainIP4DNSLocal, "-p", "udp", "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort)
 	if err != nil {
 		return fmt.Errorf("failed to append dns rules: %v", err)
 	}
@@ -146,6 +168,10 @@ func applyIPTables() error {
 	if err != nil {
 		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
 	}
+	err = ip4.DeleteIfExists(tableNat, chainOutput, "-j", chainIP4DNSLocal)
+	if err != nil {
+		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainOutput, chainIP4DNSLocal, err)
+	}
 
 	err = ip4.AppendUnique(tableMangle, chainPreRouting, "-j", chainIP4)
 	if err != nil {
@@ -158,6 +184,10 @@ func applyIPTables() error {
 	err = ip4.AppendUnique(tableNat, chainPreRouting, "-j", chainIP4DNS)
 	if err != nil {
 		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
+	}
+	err = ip4.AppendUnique(tableNat, chainOutput, "-j", chainIP4DNSLocal)
+	if err != nil {
+		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableNat, chainOutput, chainIP4DNSLocal, err)
 	}
 
 	return nil
@@ -214,7 +244,6 @@ func cleanIPTables() {
 	if err != nil {
 		logrus.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNS, err)
 	}
-
 	if ok {
 		logrus.Debug("[iptables] clean dns...")
 		err = ip4.DeleteIfExists(tableNat, chainPreRouting, "-j", chainIP4DNS)
@@ -227,13 +256,17 @@ func cleanIPTables() {
 		}
 	}
 
-	ok, err = ip4.ChainExists(tableNat, chainIP4DNS)
+	ok, err = ip4.ChainExists(tableNat, chainIP4DNSLocal)
 	if err != nil {
-		logrus.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNS, err)
+		logrus.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNSLocal, err)
 	}
 	if ok {
-		logrus.Debugf("[iptables] clean %s/%s...", tableNat, chainIP4DNS)
-		err = ip4.ClearAndDeleteChain(tableNat, chainIP4DNS)
+		logrus.Debug("[iptables] clean local dns...")
+		err = ip4.DeleteIfExists(tableNat, chainOutput, "-j", chainIP4DNSLocal)
+		if err != nil {
+			logrus.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainOutput, chainIP4DNSLocal, err)
+		}
+		err = ip4.ClearAndDeleteChain(tableNat, chainIP4DNSLocal)
 		if err != nil {
 			logrus.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
 		}
