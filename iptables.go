@@ -153,6 +153,11 @@ func applyIPTables() error {
 		return fmt.Errorf("failed to append icmp fake rules: %v", err)
 	}
 
+	err = ip4.AppendUnique(tableNat, chainOutput, "-p", "icmp", "-d", conf.FakeIPRange, "-j", actionDNat, "--to-destination", "127.0.0.1")
+	if err != nil {
+		return fmt.Errorf("failed to append icmp fake rules: %v", err)
+	}
+
 	/* Apply Rules */
 
 	logrus.Info("[iptables] apply all rules...")
@@ -274,6 +279,11 @@ func cleanIPTables() {
 
 	logrus.Debug("[iptables] clean icmp fake...")
 	err = ip4.DeleteIfExists(tableNat, chainPreRouting, "-p", "icmp", "-d", conf.FakeIPRange, "-j", actionDNat, "--to-destination", "127.0.0.1")
+	if err != nil {
+		logrus.Errorf("failed to delete icmp fake rules: %v", err)
+	}
+
+	err = ip4.DeleteIfExists(tableNat, chainOutput, "-p", "icmp", "-d", conf.FakeIPRange, "-j", actionDNat, "--to-destination", "127.0.0.1")
 	if err != nil {
 		logrus.Errorf("failed to delete icmp fake rules: %v", err)
 	}
