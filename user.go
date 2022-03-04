@@ -8,7 +8,7 @@ import (
 )
 
 func createUser() {
-	if !checkUser() {
+	if !checkUser(clashUser) {
 		bs, err := exec.Command("useradd", "-M", "-s", "/bin/false", clashUser).CombinedOutput()
 		if err != nil {
 			logrus.Fatalf("failed to create tpclash user: %s, %v", bs, err)
@@ -16,12 +16,12 @@ func createUser() {
 	}
 }
 
-func checkUser() bool {
-	u, err := user.Lookup(clashUser)
+func checkUser(u string) bool {
+	ou, err := user.Lookup(u)
 	if err != nil {
 		return false
 	}
-	return u != nil
+	return ou != nil
 }
 
 func chownR(p string) error {
