@@ -111,7 +111,14 @@ func applyIPTables() error {
 	// iptables -t mangle -A TP_CLASH_LOCAL_V4 -m owner --gid-owner tpdirect -j RETURN
 	err = ip4.AppendUnique(tableMangle, chainIP4Local, "-m", "owner", "--gid-owner", directGroup, "-j", actionReturn)
 	if err != nil {
-		return fmt.Errorf("failed to append gateway user skip rules: %v", err)
+		return fmt.Errorf("failed to append gateway group skip rules: %v", err)
+	}
+	// iptables -t mangle -A TP_CLASH_LOCAL_V4 -m owner --gid-owner systemd-resolve -j RETURN
+	if checkGroup(systemdResolveGroup) {
+		err = ip4.AppendUnique(tableMangle, chainIP4Local, "-m", "owner", "--gid-owner", systemdResolveGroup, "-j", actionReturn)
+		if err != nil {
+			return fmt.Errorf("failed to append gateway systemd-resolve skip rules: %v", err)
+		}
 	}
 
 	// iptables -t mangle -A TP_CLASH_LOCAL_V4 -p udp -m udp --dport 53 -j RETURN

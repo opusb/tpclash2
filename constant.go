@@ -21,9 +21,10 @@ const (
 	actionDNat     = "DNAT"
 	actionMark     = "MARK"
 
-	tproxyMark  = "666"
-	clashUser   = "tpclash"
-	directGroup = "tpdirect"
+	tproxyMark          = "666"
+	clashUser           = "tpclash"
+	directGroup         = "tpdirect"
+	systemdResolveGroup = "systemd-resolve"
 )
 
 // https://github.com/torvalds/linux/blob/master/include/uapi/linux/capability.h

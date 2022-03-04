@@ -97,6 +97,6 @@ func tpClashInit() {
 	}
 
 	// copy static files
-	createUser()
+	ensureUserAndGroup()
 	mkHomeDir()
 }

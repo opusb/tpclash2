@@ -7,11 +7,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func createUser() {
+func ensureUserAndGroup() {
 	if !checkUser(clashUser) {
 		bs, err := exec.Command("useradd", "-M", "-s", "/bin/false", clashUser).CombinedOutput()
 		if err != nil {
 			logrus.Fatalf("failed to create tpclash user: %s, %v", bs, err)
+		}
+	}
+	if !checkGroup(directGroup) {
+		bs, err := exec.Command("groupadd", directGroup).CombinedOutput()
+		if err != nil {
+			logrus.Fatalf("failed to create tpdirect group: %s, %v", bs, err)
 		}
 	}
 }
@@ -22,6 +28,14 @@ func checkUser(u string) bool {
 		return false
 	}
 	return ou != nil
+}
+
+func checkGroup(g string) bool {
+	og, err := user.LookupGroup(g)
+	if err != nil {
+		return false
+	}
+	return og != nil
 }
 
 func chownR(p string) error {
