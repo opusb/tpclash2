@@ -178,6 +178,13 @@ func applyIPTables() error {
 	if err != nil {
 		return fmt.Errorf("failed to append gateway group skip rules: %v", err)
 	}
+	// iptables -t nat -A TP_CLASH_DNS_LOCAL_V4 -m owner --gid-owner systemd-resolve -j RETURN
+	if checkGroup(systemdResolveGroup) {
+		err = ip4.AppendUnique(tableNat, chainIP4DNSLocal, "-m", "owner", "--gid-owner", systemdResolveGroup, "-j", actionReturn)
+		if err != nil {
+			return fmt.Errorf("failed to append gateway systemd-resolve skip rules: %v", err)
+		}
+	}
 	// iptables -t nat -A TP_CLASH_DNS_LOCAL_V4 -p udp -m udp --dport 53 -j REDIRECT --to-ports 1053
 	if err != nil {
 		return fmt.Errorf("failed to append dns rules: %v", err)
