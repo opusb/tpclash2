@@ -108,19 +108,10 @@ func applyIPTables() error {
 	if err != nil {
 		return fmt.Errorf("failed to append gateway dns skip rules: %v", err)
 	}
-
-	if ignoreUsers != nil {
-		for _, u := range ignoreUsers {
-			if !checkUser(u) {
-				logrus.Warnf("[iptables] user %s not found, skip...", u)
-				continue
-			}
-			// iptables -t mangle -A TP_CLASH_LOCAL_V4 -m owner --uid-owner USER -j RETURN
-			err = ip4.AppendUnique(tableMangle, chainIP4Local, "-m", "owner", "--uid-owner", u, "-j", actionReturn)
-			if err != nil {
-				return fmt.Errorf("failed to append gateway user skip rules: %v", err)
-			}
-		}
+	// iptables -t mangle -A TP_CLASH_LOCAL_V4 -m owner --gid-owner tpdirect -j RETURN
+	err = ip4.AppendUnique(tableMangle, chainIP4Local, "-m", "owner", "--gid-owner", directGroup, "-j", actionReturn)
+	if err != nil {
+		return fmt.Errorf("failed to append gateway user skip rules: %v", err)
 	}
 
 	// iptables -t mangle -A TP_CLASH_LOCAL_V4 -p udp -m udp --dport 53 -j RETURN
@@ -175,6 +166,11 @@ func applyIPTables() error {
 	logrus.Debugf("[iptables] checking chain %s/%s rules...", tableNat, chainIP4DNSLocal)
 	// iptables -t nat -A TP_CLASH_DNS_LOCAL_V4 -m owner --uid-owner tpclash -j RETURN
 	err = ip4.AppendUnique(tableNat, chainIP4DNSLocal, "-m", "owner", "--uid-owner", clashUser, "-j", actionReturn)
+	// iptables -t nat -A TP_CLASH_DNS_LOCAL_V4 -m owner --gid-owner tpdirect -j RETURN
+	err = ip4.AppendUnique(tableNat, chainIP4DNSLocal, "-m", "owner", "--gid-owner", directGroup, "-j", actionReturn)
+	if err != nil {
+		return fmt.Errorf("failed to append gateway group skip rules: %v", err)
+	}
 	// iptables -t nat -A TP_CLASH_DNS_LOCAL_V4 -p udp -m udp --dport 53 -j REDIRECT --to-ports 1053
 	if err != nil {
 		return fmt.Errorf("failed to append dns rules: %v", err)

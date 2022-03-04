@@ -21,8 +21,9 @@ const (
 	actionDNat     = "DNAT"
 	actionMark     = "MARK"
 
-	tproxyMark = "666"
-	clashUser  = "tpclash"
+	tproxyMark  = "666"
+	clashUser   = "tpclash"
+	directGroup = "tpdirect"
 )
 
 // https://github.com/torvalds/linux/blob/master/include/uapi/linux/capability.h
