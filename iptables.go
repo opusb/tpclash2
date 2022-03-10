@@ -52,6 +52,10 @@ func applyLocalNetwork(ins *iptables.IPTables, table, chain string) error {
 }
 
 func applyIPTables() error {
+	if hijackDNS == nil {
+		hijackDNS = []string{"0.0.0.0/0"}
+	}
+
 	/* Create *iptables.IPTables */
 
 	ip4, err := newIPTables(iptables.ProtocolIPv4)
@@ -160,10 +164,12 @@ func applyIPTables() error {
 		return err
 	}
 	logrus.Debugf("[iptables] checking chain %s/%s rules...", tableNat, chainIP4DNS)
-	// iptables -t nat -A TP_CLASH_DNS_V4 -p udp -m udp --dport 53 -j REDIRECT --to-ports 1053
-	err = ip4.AppendUnique(tableNat, chainIP4DNS, "-p", "udp", "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort)
-	if err != nil {
-		return fmt.Errorf("failed to append dns rules: %v", err)
+	// iptables -t nat -A TP_CLASH_DNS_V4 -p udp -m udp --dst 0.0.0.0/0 --dport 53 -j REDIRECT --to-ports 1053
+	for _, hDNS := range hijackDNS {
+		err = ip4.AppendUnique(tableNat, chainIP4DNS, "-p", "udp", "--dst", hDNS, "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort)
+		if err != nil {
+			return fmt.Errorf("failed to append dns rules: %v", err)
+		}
 	}
 
 	// iptables -t nat -N TP_CLASH_DNS_LOCAL_V4
@@ -189,9 +195,6 @@ func applyIPTables() error {
 		return fmt.Errorf("failed to append dns rules: %v", err)
 	}
 	// iptables -t nat -A TP_CLASH_DNS_LOCAL_V4 -p udp -m udp -dst 0.0.0.0/0 --dport 53 -j REDIRECT --to-ports 1053
-	if hijackDNS == nil {
-		hijackDNS = []string{"0.0.0.0/0"}
-	}
 	for _, hDNS := range hijackDNS {
 		err = ip4.AppendUnique(tableNat, chainIP4DNSLocal, "-p", "udp", "--dst", hDNS, "--dport", "53", "-j", actionRedirect, "--to", conf.DNSPort)
 		if err != nil {
