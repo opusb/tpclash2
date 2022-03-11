@@ -15,10 +15,10 @@ import (
 var static embed.FS
 
 func mkHomeDir() {
-	info, err := os.Stat(clashHome)
+	info, err := os.Stat(conf.ClashHome)
 	if err != nil {
 		if os.IsNotExist(err) {
-			err = os.MkdirAll(clashHome, 0755)
+			err = os.MkdirAll(conf.ClashHome, 0755)
 			if err != nil {
 				logrus.Fatalf("failed to create clash home dir: %v", err)
 			}
@@ -37,17 +37,17 @@ func copyFiles() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	err = extract(static, dirEntries, "static", clashHome)
+	err = extract(static, dirEntries, "static", conf.ClashHome)
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	err = chmod(filepath.Join(clashHome, "xclash"))
+	err = chmod(filepath.Join(conf.ClashHome, "xclash"))
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	err = chownR(clashHome)
+	err = chownR(conf.ClashHome)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -76,7 +76,7 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) erro
 				return err
 			}
 		} else {
-			if !mmdb && strings.Contains(dirEntry.Name(), "Country.mmdb") {
+			if !conf.MMDB && strings.Contains(dirEntry.Name(), "Country.mmdb") {
 				logrus.Warn("[static] skip Country.mmdb...")
 				continue
 			}

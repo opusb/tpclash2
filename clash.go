@@ -37,7 +37,7 @@ func run() {
 		logrus.Fatalf("Fix IPTables Error: %s", err)
 	}
 
-	u, err := user.Lookup(clashUser)
+	u, err := user.Lookup(conf.ClashUser)
 	if err != nil {
 		logrus.Fatalf("failed to get tpclash user: %v", err)
 	}
@@ -45,7 +45,7 @@ func run() {
 	uid, _ := strconv.Atoi(u.Uid)
 	gid, _ := strconv.Atoi(u.Gid)
 
-	cmds := []string{filepath.Join(clashHome, "xclash"), "-f", clashConfig, "-d", clashHome, "-ext-ui", filepath.Join(clashHome, clashUI)}
+	cmds := []string{filepath.Join(conf.ClashHome, "xclash"), "-f", conf.ClashConfig, "-d", conf.ClashHome, "-ext-ui", filepath.Join(conf.ClashHome, conf.ClashUI)}
 	logrus.Debugf("[clash] running cmds: %v", cmds)
 
 	cmd := exec.Command(cmds[0], cmds[1:]...)

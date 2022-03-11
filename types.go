@@ -10,7 +10,20 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Conf struct {
+type TPClashConf struct {
+	ClashHome   string
+	ClashConfig string
+	ClashUI     string
+	HijackDNS   []string
+	MMDB        bool
+	LocalProxy  bool
+
+	TproxyMark  string
+	ClashUser   string
+	DirectGroup string
+}
+
+type ClashConf struct {
 	Debug       bool
 	DNSHost     string
 	DNSPort     string
@@ -19,7 +32,24 @@ type Conf struct {
 	ExternalUI  string
 }
 
-func parseConf() (*Conf, error) {
+type IptablesMode interface {
+	addForward() error
+	delForward() error
+
+	addForwardDNS() error
+	delForwardDNS() error
+
+	addLocal() error
+	delLocal() error
+
+	addLocalDNS() error
+	delLocalDNS() error
+
+	apply() error
+	clean() error
+}
+
+func parseConf() (*ClashConf, error) {
 	debug := viper.GetString("log-level")
 	enhancedMode := viper.GetString("dns.enhanced-mode")
 	tproxyPort := viper.GetInt("tproxy-port")
@@ -57,7 +87,7 @@ func parseConf() (*Conf, error) {
 		externalUI = "dashboard"
 	}
 
-	return &Conf{
+	return &ClashConf{
 		Debug:       strings.ToLower(debug) == "debug",
 		DNSHost:     dnsHost,
 		DNSPort:     dnsPort,

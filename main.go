@@ -8,15 +8,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-var clashHome string
-var clashConfig string
-var clashUI string
-var hijackDNS []string
-var mmdb bool
-
+var conf TPClashConf
+var clashConf *ClashConf
 var commit string
-
-var conf *Conf
 
 var rootCmd = &cobra.Command{
 	Use:     "tpclash",
@@ -53,11 +47,20 @@ func init() {
 	cobra.EnableCommandSorting = false
 	cobra.OnInitialize(tpClashInit)
 
-	rootCmd.PersistentFlags().StringVarP(&clashHome, "home", "d", "/data/clash", "clash home dir")
-	rootCmd.PersistentFlags().StringVarP(&clashConfig, "config", "c", "/etc/clash.yaml", "clash config path")
-	rootCmd.PersistentFlags().StringVarP(&clashUI, "ui", "u", "yacd", "clash dashboard(official/yacd)")
-	rootCmd.PersistentFlags().StringSliceVar(&hijackDNS, "hijack-dns", nil, "hijack the target DNS address (default \"0.0.0.0/0\")")
-	rootCmd.PersistentFlags().BoolVar(&mmdb, "mmdb", true, "extract Country.mmdb file")
+	rootCmd.PersistentFlags().StringVarP(&conf.ClashHome, "home", "d", "/data/clash", "clash home dir")
+	rootCmd.PersistentFlags().StringVarP(&conf.ClashConfig, "config", "c", "/etc/clash.yaml", "clash config path")
+	rootCmd.PersistentFlags().StringVarP(&conf.ClashUI, "ui", "u", "yacd", "clash dashboard(official/yacd)")
+	rootCmd.PersistentFlags().StringSliceVar(&conf.HijackDNS, "hijack-dns", nil, "hijack the target DNS address (default \"0.0.0.0/0\")")
+	rootCmd.PersistentFlags().BoolVar(&conf.MMDB, "mmdb", true, "extract Country.mmdb file")
+	rootCmd.PersistentFlags().BoolVar(&conf.LocalProxy, "local-proxy", true, "enable local proxy")
+
+	rootCmd.PersistentFlags().StringVar(&conf.TproxyMark, "tproxy-mark", defaultTproxyMark, "tproxy mark")
+	rootCmd.PersistentFlags().StringVar(&conf.ClashUser, "clash-user", defaultClashUser, "clash runtime user")
+	rootCmd.PersistentFlags().StringVar(&conf.DirectGroup, "direct-group", defaultDirectGroup, "skip transparent proxy group")
+
+	_ = rootCmd.PersistentFlags().MarkHidden("tproxy-mark")
+	_ = rootCmd.PersistentFlags().MarkHidden("clash-user")
+	_ = rootCmd.PersistentFlags().MarkHidden("direct-group")
 
 	rootCmd.AddCommand(runCmd, cleanCmd, extractCmd)
 }
@@ -79,8 +82,13 @@ func tpClashInit() {
 		logrus.Fatal("only support linux system")
 	}
 
+	// set default hijack dns
+	if conf.HijackDNS == nil {
+		conf.HijackDNS = []string{"0.0.0.0/0"}
+	}
+
 	// init config
-	viper.SetConfigFile(clashConfig)
+	viper.SetConfigFile(conf.ClashConfig)
 	viper.SetEnvPrefix("TPCLASH")
 	viper.AutomaticEnv()
 
@@ -89,12 +97,12 @@ func tpClashInit() {
 	if err != nil {
 		logrus.Fatalf("failed to load config: %v", err)
 	}
-	conf, err = parseConf()
+	clashConf, err = parseConf()
 	if err != nil {
 		logrus.Fatal(err)
 	}
 
-	if conf.Debug {
+	if clashConf.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 

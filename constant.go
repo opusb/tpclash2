@@ -1,5 +1,12 @@
 package main
 
+// https://github.com/torvalds/linux/blob/master/include/uapi/linux/capability.h
+const (
+	CAP_NET_BIND_SERVICE = 10
+	CAP_NET_ADMIN        = 12
+	CAP_NET_RAW          = 13
+)
+
 const (
 	tableMangle = "mangle"
 	tableNat    = "nat"
@@ -21,15 +28,9 @@ const (
 	actionDNat     = "DNAT"
 	actionMark     = "MARK"
 
-	tproxyMark          = "666"
-	clashUser           = "tpclash"
-	directGroup         = "tpdirect"
 	systemdResolveGroup = "systemd-resolve"
-)
 
-// https://github.com/torvalds/linux/blob/master/include/uapi/linux/capability.h
-const (
-	CAP_NET_BIND_SERVICE = 10
-	CAP_NET_ADMIN        = 12
-	CAP_NET_RAW          = 13
+	defaultTproxyMark  = "666"
+	defaultClashUser   = "tpclash"
+	defaultDirectGroup = "tpdirect"
 )

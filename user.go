@@ -8,14 +8,14 @@ import (
 )
 
 func ensureUserAndGroup() {
-	if !checkUser(clashUser) {
-		bs, err := exec.Command("useradd", "-M", "-s", "/bin/false", clashUser).CombinedOutput()
+	if !checkUser(conf.ClashUser) {
+		bs, err := exec.Command("useradd", "-M", "-s", "/bin/false", conf.ClashUser).CombinedOutput()
 		if err != nil {
 			logrus.Fatalf("failed to create tpclash user: %s, %v", bs, err)
 		}
 	}
-	if !checkGroup(directGroup) {
-		bs, err := exec.Command("groupadd", directGroup).CombinedOutput()
+	if !checkGroup(conf.DirectGroup) {
+		bs, err := exec.Command("groupadd", conf.DirectGroup).CombinedOutput()
 		if err != nil {
 			logrus.Fatalf("failed to create tpdirect group: %s, %v", bs, err)
 		}
@@ -39,7 +39,7 @@ func checkGroup(g string) bool {
 }
 
 func chownR(p string) error {
-	bs, err := exec.Command("chown", "-R", clashUser+":"+clashUser, p).CombinedOutput()
+	bs, err := exec.Command("chown", "-R", conf.ClashUser+":"+conf.ClashUser, p).CombinedOutput()
 	if err != nil {
 		logrus.Fatalf("failed to change dir owner: %s, %v", bs, err)
 	}
