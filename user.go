@@ -3,6 +3,7 @@ package main
 import (
 	"os/exec"
 	"os/user"
+	"strconv"
 
 	"github.com/sirupsen/logrus"
 )
@@ -52,4 +53,12 @@ func chmod(p string) error {
 		logrus.Fatalf("failed to change file permission: %s, %v", bs, err)
 	}
 	return nil
+}
+
+func getUserIDs(u string) (uint32, uint32) {
+	us, _ := user.Lookup(u)
+
+	uid, _ := strconv.Atoi(us.Uid)
+	gid, _ := strconv.Atoi(us.Gid)
+	return uint32(uid), uint32(gid)
 }

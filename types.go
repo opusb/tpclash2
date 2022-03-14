@@ -11,6 +11,8 @@ import (
 )
 
 type TPClashConf struct {
+	ProxyMode string
+
 	ClashHome   string
 	ClashConfig string
 	ClashUI     string
@@ -21,6 +23,8 @@ type TPClashConf struct {
 	TproxyMark  string
 	ClashUser   string
 	DirectGroup string
+
+	Debug bool
 }
 
 type ClashConf struct {
@@ -32,7 +36,7 @@ type ClashConf struct {
 	ExternalUI  string
 }
 
-type IptablesMode interface {
+type ProxyMode interface {
 	addForward() error
 	delForward() error
 

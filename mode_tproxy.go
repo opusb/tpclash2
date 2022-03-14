@@ -5,6 +5,8 @@ package main
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 
@@ -18,6 +20,8 @@ type tproxyMode struct {
 }
 
 func (m *tproxyMode) addForward() error {
+	logrus.Debugf("[tproxy] add forward iptables rules...")
+
 	var err error
 
 	// iptables -t mangle -N TP_CLASH_V4
@@ -65,13 +69,14 @@ func (m *tproxyMode) addForward() error {
 }
 
 func (m *tproxyMode) delForward() error {
+	logrus.Debugf("[tproxy] delete forward iptables rules...")
+
 	ok, err := m.ins.ChainExists(tableMangle, chainIP4)
 	if err != nil {
 		return fmt.Errorf("failed to check chain %s/%s: %s", tableMangle, chainIP4, err)
 	}
 
 	if ok {
-		logrus.Debugf("[iptables] clean %s/%s...", tableMangle, chainPreRouting)
 		err = m.ins.DeleteIfExists(tableMangle, chainPreRouting, "-j", chainIP4)
 		if err != nil {
 			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainPreRouting, chainIP4, err)
@@ -92,6 +97,8 @@ func (m *tproxyMode) delForward() error {
 }
 
 func (m *tproxyMode) addForwardDNS() error {
+	logrus.Debugf("[tproxy] add forward dns iptables rules...")
+
 	var err error
 
 	// iptables -t nat -N TP_CLASH_DNS_V4
@@ -111,12 +118,13 @@ func (m *tproxyMode) addForwardDNS() error {
 }
 
 func (m *tproxyMode) delForwardDNS() error {
+	logrus.Debugf("[tproxy] delete forward dns iptables rules...")
+
 	ok, err := m.ins.ChainExists(tableNat, chainIP4DNS)
 	if err != nil {
 		return fmt.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNS, err)
 	}
 	if ok {
-		logrus.Debug("[iptables] clean dns...")
 		err = m.ins.DeleteIfExists(tableNat, chainPreRouting, "-j", chainIP4DNS)
 		if err != nil {
 			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
@@ -131,6 +139,8 @@ func (m *tproxyMode) delForwardDNS() error {
 }
 
 func (m *tproxyMode) addLocal() error {
+	logrus.Debugf("[tproxy] add local iptables rules...")
+
 	var err error
 
 	// iptables -t mangle -N TP_CLASH_LOCAL_V4
@@ -176,6 +186,18 @@ func (m *tproxyMode) addLocal() error {
 		return fmt.Errorf("failed to append gateway dns skip rules: %v", err)
 	}
 
+	// iptables -t mangle -A TP_CLASH_LOCAL_V4 -p tcp -j MARK --set-xmark 0x29a/0xffffffff
+	err = m.ins.AppendUnique(tableMangle, chainIP4Local, "-p", "tcp", "-j", actionMark, "--set-mark", m.tpcc.TproxyMark)
+	if err != nil {
+		return fmt.Errorf("failed to append tcp trpoxy rules: %v", err)
+	}
+
+	// iptables -t mangle -A TP_CLASH_LOCAL_V4 -p udp -j MARK --set-xmark 0x29a/0xffffffff
+	err = m.ins.AppendUnique(tableMangle, chainIP4Local, "-p", "udp", "-j", actionMark, "--set-mark", m.tpcc.TproxyMark)
+	if err != nil {
+		return fmt.Errorf("failed to append tcp trpoxy rules: %v", err)
+	}
+
 	// iptables -t nat -A OUTPUT -d 198.18.0.0/16 -p icmp -j DNAT --to-destination 127.0.0.1
 	err = m.ins.AppendUnique(tableNat, chainOutput, "-p", "icmp", "-d", m.cc.FakeIPRange, "-j", actionDNat, "--to-destination", "127.0.0.1")
 	if err != nil {
@@ -186,13 +208,14 @@ func (m *tproxyMode) addLocal() error {
 }
 
 func (m *tproxyMode) delLocal() error {
+	logrus.Debugf("[tproxy] delete local iptables rules...")
+
 	ok, err := m.ins.ChainExists(tableMangle, chainIP4Local)
 	if err != nil {
 		return fmt.Errorf("failed to check chain %s/%s: %s", tableMangle, chainIP4Local, err)
 	}
 
 	if ok {
-		logrus.Debugf("[iptables] clean %s/%s...", tableMangle, chainOutput)
 		err = m.ins.DeleteIfExists(tableMangle, chainOutput, "-j", chainIP4Local)
 		if err != nil {
 			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
@@ -212,6 +235,8 @@ func (m *tproxyMode) delLocal() error {
 }
 
 func (m *tproxyMode) addLocalDNS() error {
+	logrus.Debugf("[tproxy] add local dns iptables rules...")
+
 	var err error
 
 	// iptables -t nat -N TP_CLASH_DNS_LOCAL_V4
@@ -252,12 +277,13 @@ func (m *tproxyMode) addLocalDNS() error {
 }
 
 func (m *tproxyMode) delLocalDNS() error {
+	logrus.Debugf("[tproxy] delete local dns iptables rules...")
+
 	ok, err := m.ins.ChainExists(tableNat, chainIP4DNSLocal)
 	if err != nil {
 		return fmt.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNSLocal, err)
 	}
 	if ok {
-		logrus.Debug("[iptables] clean local dns...")
 		err = m.ins.DeleteIfExists(tableNat, chainOutput, "-j", chainIP4DNSLocal)
 		if err != nil {
 			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainOutput, chainIP4DNSLocal, err)
@@ -273,6 +299,18 @@ func (m *tproxyMode) delLocalDNS() error {
 
 func (m *tproxyMode) apply() error {
 	var err error
+
+	logrus.Info("[route] add ip route rules...")
+	bs, err := exec.Command("ip", "rule", "add", "fwmark", m.tpcc.TproxyMark, "lookup", m.tpcc.TproxyMark).CombinedOutput()
+	if err != nil && !strings.Contains(string(bs), "File exists") {
+		return fmt.Errorf("failed to create ip rule: %s, %v", bs, err)
+	}
+
+	logrus.Info("[route] add ip routes...")
+	bs, err = exec.Command("ip", "route", "add", "local", "0.0.0.0/0", "dev", "lo", "table", m.tpcc.TproxyMark).CombinedOutput()
+	if err != nil && !strings.Contains(string(bs), "File exists") {
+		return fmt.Errorf("failed to create ip route: %s, %v", bs, err)
+	}
 
 	logrus.Info("[iptables] apply all rules...")
 
@@ -302,25 +340,16 @@ func (m *tproxyMode) apply() error {
 }
 
 func (m *tproxyMode) clean() error {
-	var err error
+	logrus.Info("[route] clean ip route rules...")
+	bs, err := exec.Command("ip", "rule", "del", "fwmark", m.tpcc.TproxyMark, "table", m.tpcc.TproxyMark).CombinedOutput()
+	if err != nil {
+		logrus.Warnf("failed to clean route: %s, %v", strings.TrimSpace(string(bs)), err)
+	}
 
-	logrus.Info("[iptables] clean all rules...")
-
-	err = m.ins.DeleteIfExists(tableMangle, chainPreRouting, "-j", chainIP4)
+	logrus.Info("[route] clean ip routes...")
+	bs, err = exec.Command("ip", "route", "del", "local", "0.0.0.0/0", "dev", "lo", "table", m.tpcc.TproxyMark).CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainPreRouting, chainIP4, err)
-	}
-	err = m.ins.DeleteIfExists(tableMangle, chainOutput, "-j", chainIP4Local)
-	if err != nil {
-		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
-	}
-	err = m.ins.DeleteIfExists(tableNat, chainPreRouting, "-j", chainIP4DNS)
-	if err != nil {
-		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
-	}
-	err = m.ins.DeleteIfExists(tableNat, chainOutput, "-j", chainIP4DNSLocal)
-	if err != nil {
-		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainOutput, chainIP4DNSLocal, err)
+		logrus.Warnf("failed to clean route: %s, %v", strings.TrimSpace(string(bs)), err)
 	}
 	return nil
 }

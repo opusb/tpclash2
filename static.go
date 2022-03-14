@@ -102,3 +102,8 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) erro
 
 	return nil
 }
+
+func ensureClashFiles() {
+	mkHomeDir()
+	copyFiles()
+}

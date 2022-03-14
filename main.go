@@ -29,9 +29,8 @@ var runCmd = &cobra.Command{
 var cleanCmd = &cobra.Command{
 	Use:   "clean",
 	Short: "Clean tpclash iptables and route config",
-	Run: func(cmd *cobra.Command, args []string) {
-		cleanIPTables()
-		cleanRoute()
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return disableProxy()
 	},
 }
 
@@ -47,12 +46,14 @@ func init() {
 	cobra.EnableCommandSorting = false
 	cobra.OnInitialize(tpClashInit)
 
+	rootCmd.PersistentFlags().StringVarP(&conf.ProxyMode, "proxy-mode", "m", "tproxy", "clash proxy mode")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashHome, "home", "d", "/data/clash", "clash home dir")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashConfig, "config", "c", "/etc/clash.yaml", "clash config path")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashUI, "ui", "u", "yacd", "clash dashboard(official/yacd)")
 	rootCmd.PersistentFlags().StringSliceVar(&conf.HijackDNS, "hijack-dns", nil, "hijack the target DNS address (default \"0.0.0.0/0\")")
 	rootCmd.PersistentFlags().BoolVar(&conf.MMDB, "mmdb", true, "extract Country.mmdb file")
 	rootCmd.PersistentFlags().BoolVar(&conf.LocalProxy, "local-proxy", true, "enable local proxy")
+	rootCmd.PersistentFlags().BoolVar(&conf.Debug, "debug", false, "enable debug log")
 
 	rootCmd.PersistentFlags().StringVar(&conf.TproxyMark, "tproxy-mark", defaultTproxyMark, "tproxy mark")
 	rootCmd.PersistentFlags().StringVar(&conf.ClashUser, "clash-user", defaultClashUser, "clash runtime user")
@@ -102,11 +103,12 @@ func tpClashInit() {
 		logrus.Fatal(err)
 	}
 
-	if clashConf.Debug {
+	if clashConf.Debug || conf.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
 	// copy static files
 	ensureUserAndGroup()
-	mkHomeDir()
+	ensureClashFiles()
+	ensureSysctl()
 }
