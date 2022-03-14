@@ -47,6 +47,12 @@ func (m *tproxyMode) addForward() error {
 		return fmt.Errorf("failed to append forward dns skip rules: %v", err)
 	}
 
+	// iptables -t mangle -A TP_CLASH_V4 -p udp -m udp --dport 123 -j RETURN
+	err = m.ins.AppendUnique(tableMangle, chainIP4, "-p", "udp", "--dport", "123", "-j", actionReturn)
+	if err != nil {
+		return fmt.Errorf("failed to append forward ntp skip rules: %v", err)
+	}
+
 	// iptables -t mangle -A TP_CLASH_V4 -p tcp -j TPROXY --on-port 7893 --on-ip 0.0.0.0 --tproxy-mark 0x29a/0xffffffff
 	err = m.ins.AppendUnique(tableMangle, chainIP4, "-p", "tcp", "-j", actionTProxy, "--on-port", m.cc.TProxyPort, "--tproxy-mark", conf.TproxyMark)
 	if err != nil {
@@ -182,6 +188,12 @@ func (m *tproxyMode) addLocal() error {
 
 	// iptables -t mangle -A TP_CLASH_LOCAL_V4 -p udp -m udp --dport 53 -j RETURN
 	err = m.ins.AppendUnique(tableMangle, chainIP4Local, "-p", "udp", "--dport", "53", "-j", actionReturn)
+	if err != nil {
+		return fmt.Errorf("failed to append gateway dns skip rules: %v", err)
+	}
+
+	// iptables -t mangle -A TP_CLASH_LOCAL_V4 -p udp -m udp --dport 123 -j RETURN
+	err = m.ins.AppendUnique(tableMangle, chainIP4Local, "-p", "udp", "--dport", "123", "-j", actionReturn)
 	if err != nil {
 		return fmt.Errorf("failed to append gateway dns skip rules: %v", err)
 	}
