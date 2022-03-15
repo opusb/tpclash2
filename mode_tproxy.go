@@ -145,6 +145,9 @@ func (m *tproxyMode) delForwardDNS() error {
 }
 
 func (m *tproxyMode) addLocal() error {
+	if !m.tpcc.LocalProxy {
+		return nil
+	}
 	logrus.Debugf("[tproxy] add local iptables rules...")
 
 	var err error
@@ -220,6 +223,9 @@ func (m *tproxyMode) addLocal() error {
 }
 
 func (m *tproxyMode) delLocal() error {
+	if !m.tpcc.LocalProxy {
+		return nil
+	}
 	logrus.Debugf("[tproxy] delete local iptables rules...")
 
 	ok, err := m.ins.ChainExists(tableMangle, chainIP4Local)
@@ -247,6 +253,9 @@ func (m *tproxyMode) delLocal() error {
 }
 
 func (m *tproxyMode) addLocalDNS() error {
+	if !m.tpcc.LocalProxy {
+		return nil
+	}
 	logrus.Debugf("[tproxy] add local dns iptables rules...")
 
 	var err error
@@ -289,6 +298,9 @@ func (m *tproxyMode) addLocalDNS() error {
 }
 
 func (m *tproxyMode) delLocalDNS() error {
+	if !m.tpcc.LocalProxy {
+		return nil
+	}
 	logrus.Debugf("[tproxy] delete local dns iptables rules...")
 
 	ok, err := m.ins.ChainExists(tableNat, chainIP4DNSLocal)
@@ -337,15 +349,17 @@ func (m *tproxyMode) apply() error {
 		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
 	}
 
-	// iptables -t mangle -A OUTPUT -j TP_CLASH_LOCAL_V4
-	err = m.ins.AppendUnique(tableMangle, chainOutput, "-j", chainIP4Local)
-	if err != nil {
-		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
-	}
-	// iptables -t nat -A OUTPUT -j TP_CLASH_DNS_LOCAL_V4
-	err = m.ins.AppendUnique(tableNat, chainOutput, "-j", chainIP4DNSLocal)
-	if err != nil {
-		return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableNat, chainOutput, chainIP4DNSLocal, err)
+	if m.tpcc.LocalProxy {
+		// iptables -t mangle -A OUTPUT -j TP_CLASH_LOCAL_V4
+		err = m.ins.AppendUnique(tableMangle, chainOutput, "-j", chainIP4Local)
+		if err != nil {
+			return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableMangle, chainOutput, chainIP4Local, err)
+		}
+		// iptables -t nat -A OUTPUT -j TP_CLASH_DNS_LOCAL_V4
+		err = m.ins.AppendUnique(tableNat, chainOutput, "-j", chainIP4DNSLocal)
+		if err != nil {
+			return fmt.Errorf("failed to apply rules: %s/%s -> %s, error: %v", tableNat, chainOutput, chainIP4DNSLocal, err)
+		}
 	}
 
 	return nil
