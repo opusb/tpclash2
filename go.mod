@@ -1,6 +1,6 @@
 module github.com/mritd/tpclash
 
-go 1.17
+go 1.18
 
 require (
 	github.com/Dreamacro/clash v1.9.0

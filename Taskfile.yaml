@@ -41,7 +41,7 @@ tasks:
   download-clash:
     vars:
       CLASH_URL:
-        sh: curl -fsSL https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq '.assets[].browser_download_url | select (. | test("clash-{{.TASK}}-.*gz"))'
+        sh: curl -fsSL https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq '.assets[].browser_download_url | select (. | test("clash-{{.TASK}}-\\d{4}.*gz"))'
     cmds:
       - rm -rf build/clash-{{.TASK}}.gz build/clash-{{.TASK}} static/xclash
       - curl -fsSL {{.CLASH_URL}} -o build/clash-{{.TASK}}.gz
@@ -77,6 +77,17 @@ tasks:
           TASK: "{{.TASK}}",
           GOOS: linux,
           GOARCH: amd64
+        }
+  linux-amd64-v3:
+    cmds:
+      - task: download-clash
+        vars: { TASK: "{{.TASK}}" }
+      - task: build-tpclash
+        vars: {
+          TASK: "{{.TASK}}",
+          GOOS: linux,
+          GOARCH: amd64,
+          GOAMD64: v3
         }
   linux-armv5:
     cmds:
@@ -182,6 +193,7 @@ tasks:
       - task: download-mmdb
       - task: linux-386
       - task: linux-amd64
+      - task: linux-amd64-v3
       - task: linux-armv5
       - task: linux-armv6
       - task: linux-armv7
