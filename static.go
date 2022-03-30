@@ -31,6 +31,11 @@ func mkHomeDir() {
 }
 
 func copyFiles() {
+	if conf.DisableExtract {
+		logrus.Warn("[static] skip copy static files...")
+		return
+	}
+
 	logrus.Info("[static] copy static files...")
 
 	dirEntries, err := static.ReadDir("static")

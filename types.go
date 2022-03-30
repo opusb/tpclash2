@@ -20,9 +20,10 @@ type TPClashConf struct {
 	MMDB        bool
 	LocalProxy  bool
 
-	TproxyMark  string
-	ClashUser   string
-	DirectGroup string
+	TproxyMark     string
+	ClashUser      string
+	DirectGroup    string
+	DisableExtract bool
 
 	Debug bool
 }

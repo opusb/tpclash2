@@ -1,8 +1,6 @@
 package main
 
 import (
-	"runtime"
-
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -57,11 +55,13 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&conf.TproxyMark, "tproxy-mark", defaultTproxyMark, "tproxy mark")
 	rootCmd.PersistentFlags().StringVar(&conf.ClashUser, "clash-user", defaultClashUser, "clash runtime user")
-	rootCmd.PersistentFlags().StringVar(&conf.DirectGroup, "direct-group", defaultDirectGroup, "skip transparent proxy group")
+	rootCmd.PersistentFlags().StringVar(&conf.DirectGroup, "direct-group", defaultDirectGroup, "skip tproxy group")
+	rootCmd.PersistentFlags().BoolVar(&conf.DisableExtract, "disable-extract", false, "disable extract files")
 
 	_ = rootCmd.PersistentFlags().MarkHidden("tproxy-mark")
 	_ = rootCmd.PersistentFlags().MarkHidden("clash-user")
 	_ = rootCmd.PersistentFlags().MarkHidden("direct-group")
+	_ = rootCmd.PersistentFlags().MarkHidden("disable-extract")
 
 	rootCmd.AddCommand(runCmd, cleanCmd, extractCmd)
 }
@@ -77,11 +77,6 @@ func tpClashInit() {
 		TimestampFormat: "2006-01-02 15:04:05",
 		PadLevelText:    true,
 	})
-
-	// os check
-	if runtime.GOOS != "linux" {
-		logrus.Fatal("only support linux system")
-	}
 
 	// set default hijack dns
 	if conf.HijackDNS == nil {
