@@ -123,15 +123,6 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string, mmdb
 }
 
 func downloadClash(u, target string) error {
-	_, err := os.Stat(target)
-	if err == nil {
-		logrus.Warn("[static] xclash already exist, skip download...")
-		return nil
-	} else {
-		if !os.IsNotExist(err) {
-			return fmt.Errorf("[static] failed to check xclash status: %s", err)
-		}
-	}
 	resp, err := http.Get(u)
 	if err != nil {
 		return fmt.Errorf("[static] failed to download clash: %s", err)
