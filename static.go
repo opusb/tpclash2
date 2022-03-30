@@ -1,9 +1,12 @@
 package main
 
 import (
+	"compress/gzip"
 	"embed"
+	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,9 +45,16 @@ func copyFiles() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	err = extract(static, dirEntries, "static", conf.ClashHome)
+	err = extract(static, dirEntries, "static", conf.ClashHome, conf.MMDB, conf.ClashURL == "")
 	if err != nil {
 		logrus.Fatal(err)
+	}
+
+	if conf.ClashURL != "" {
+		logrus.Info("[static] downloading clash...")
+		if err = downloadClash(conf.ClashURL, filepath.Join(conf.ClashHome, "xclash")); err != nil {
+			logrus.Fatal(err)
+		}
 	}
 
 	err = chmod(filepath.Join(conf.ClashHome, "xclash"))
@@ -58,7 +68,7 @@ func copyFiles() {
 	}
 }
 
-func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) error {
+func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string, mmdb, xclash bool) error {
 	for _, dirEntry := range dirEntries {
 		info, err := dirEntry.Info()
 		if err != nil {
@@ -76,13 +86,17 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) erro
 			if err != nil {
 				return err
 			}
-			err = extract(efs, entries, filepath.Join(origin, dirEntry.Name()), filepath.Join(target, dirEntry.Name()))
+			err = extract(efs, entries, filepath.Join(origin, dirEntry.Name()), filepath.Join(target, dirEntry.Name()), mmdb, xclash)
 			if err != nil {
 				return err
 			}
 		} else {
-			if !conf.MMDB && strings.Contains(dirEntry.Name(), "Country.mmdb") {
-				logrus.Warn("[static] skip Country.mmdb...")
+			if !mmdb && strings.Contains(dirEntry.Name(), "Country.mmdb") {
+				logrus.Warn("[static] skip extract mmdb...")
+				continue
+			}
+			if !xclash && strings.Contains(dirEntry.Name(), "xclash") {
+				logrus.Warn("[static] skip extract xclash...")
 				continue
 			}
 			sf, err := static.Open(filepath.Join(origin, dirEntry.Name()))
@@ -103,6 +117,31 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) erro
 				return err
 			}
 		}
+	}
+
+	return nil
+}
+
+func downloadClash(u, target string) error {
+	resp, err := http.Get(u)
+	if err != nil {
+		return fmt.Errorf("[static] failed to download clash: %s", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	r, err := gzip.NewReader(resp.Body)
+	if err != nil {
+		return fmt.Errorf("[static] failed to create gzip reader: %s", err)
+	}
+
+	f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0755)
+	if err != nil {
+		return fmt.Errorf("[static] failed to create xclash: %s", err)
+	}
+	defer func() { _ = f.Close() }()
+	_, err = io.Copy(f, r)
+	if err != nil {
+		return fmt.Errorf("[static] failed to create xclash: %s", err)
 	}
 
 	return nil

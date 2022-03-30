@@ -48,19 +48,21 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashHome, "home", "d", "/data/clash", "clash home dir")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashConfig, "config", "c", "/etc/clash.yaml", "clash config path")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashUI, "ui", "u", "yacd", "clash dashboard(official/yacd)")
-	rootCmd.PersistentFlags().StringSliceVar(&conf.HijackDNS, "hijack-dns", nil, "hijack the target DNS address (default \"0.0.0.0/0\")")
 	rootCmd.PersistentFlags().BoolVar(&conf.MMDB, "mmdb", true, "extract Country.mmdb file")
+	rootCmd.PersistentFlags().StringVar(&conf.ClashURL, "download", "", "clash download url")
 	rootCmd.PersistentFlags().BoolVar(&conf.LocalProxy, "local-proxy", true, "enable local proxy")
 	rootCmd.PersistentFlags().BoolVar(&conf.Debug, "debug", false, "enable debug log")
 
 	rootCmd.PersistentFlags().StringVar(&conf.TproxyMark, "tproxy-mark", defaultTproxyMark, "tproxy mark")
 	rootCmd.PersistentFlags().StringVar(&conf.ClashUser, "clash-user", defaultClashUser, "clash runtime user")
 	rootCmd.PersistentFlags().StringVar(&conf.DirectGroup, "direct-group", defaultDirectGroup, "skip tproxy group")
+	rootCmd.PersistentFlags().StringSliceVar(&conf.HijackDNS, "hijack-dns", nil, "hijack the target DNS address (default \"0.0.0.0/0\")")
 	rootCmd.PersistentFlags().BoolVar(&conf.DisableExtract, "disable-extract", false, "disable extract files")
 
 	_ = rootCmd.PersistentFlags().MarkHidden("tproxy-mark")
 	_ = rootCmd.PersistentFlags().MarkHidden("clash-user")
 	_ = rootCmd.PersistentFlags().MarkHidden("direct-group")
+	_ = rootCmd.PersistentFlags().MarkHidden("hijack-dns")
 	_ = rootCmd.PersistentFlags().MarkHidden("disable-extract")
 
 	rootCmd.AddCommand(runCmd, cleanCmd, extractCmd)

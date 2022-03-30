@@ -16,13 +16,14 @@ type TPClashConf struct {
 	ClashHome   string
 	ClashConfig string
 	ClashUI     string
-	HijackDNS   []string
+	ClashURL    string
 	MMDB        bool
 	LocalProxy  bool
 
 	TproxyMark     string
 	ClashUser      string
 	DirectGroup    string
+	HijackDNS      []string
 	DisableExtract bool
 
 	Debug bool
