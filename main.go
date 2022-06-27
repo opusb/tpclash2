@@ -59,12 +59,6 @@ func init() {
 	rootCmd.PersistentFlags().StringSliceVar(&conf.HijackDNS, "hijack-dns", nil, "hijack the target DNS address (default \"0.0.0.0/0\")")
 	rootCmd.PersistentFlags().BoolVar(&conf.DisableExtract, "disable-extract", false, "disable extract files")
 
-	_ = rootCmd.PersistentFlags().MarkHidden("tproxy-mark")
-	_ = rootCmd.PersistentFlags().MarkHidden("clash-user")
-	_ = rootCmd.PersistentFlags().MarkHidden("direct-group")
-	_ = rootCmd.PersistentFlags().MarkHidden("hijack-dns")
-	_ = rootCmd.PersistentFlags().MarkHidden("disable-extract")
-
 	rootCmd.AddCommand(runCmd, cleanCmd, extractCmd)
 }
 
