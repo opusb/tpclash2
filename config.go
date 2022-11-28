@@ -52,6 +52,12 @@ func parseClashConf() error {
 		if tproxyPort < 1 {
 			return fmt.Errorf("tproxy port in clash config is missing(tproxy-port)")
 		}
+		if tunEnabled {
+			return fmt.Errorf("tun must be disabled in tproxy mode(tun.enable)")
+		}
+		if routingMark > 0 {
+			return fmt.Errorf("routing-mark cannot be set in tproxy mode(routing-mark)")
+		}
 	case "ebpf":
 		if tproxyPort > 0 {
 			return fmt.Errorf("please delete the tproxy port in ebpf mode(tproxy-port)")
