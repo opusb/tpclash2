@@ -1,6 +1,3 @@
-//go:build linux
-// +build linux
-
 package main
 
 import (
@@ -10,12 +7,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var privateCIDR = []string{
+// ReservedCIDR https://en.wikipedia.org/wiki/Reserved_IP_addresses
+var ReservedCIDR = []string{
 	"0.0.0.0/8",
 	"127.0.0.0/8",
 	"10.0.0.0/8",
 	"172.16.0.0/12",
 	"192.168.0.0/16",
+	"100.64.0.0/10",
 	"169.254.0.0/16",
 	"224.0.0.0/4",
 	"240.0.0.0/4",
@@ -44,7 +43,7 @@ func createChain(ins *iptables.IPTables, table, chain string) error {
 
 func skipPrivateNetwork(ins *iptables.IPTables, table, chain string) error {
 	logrus.Debugf("[iptables] checking chain %s/%s rules...", table, chain)
-	for _, cidr := range privateCIDR {
+	for _, cidr := range ReservedCIDR {
 		logrus.Debugf("[iptables] append private cidr %s rule to %s/%s...", cidr, table, chain)
 		err := ins.AppendUnique(table, chain, "-d", cidr, "-j", actionReturn)
 		if err != nil {

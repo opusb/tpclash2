@@ -1,33 +1,30 @@
-//go:build linux
-
 package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"strings"
 	"syscall"
 	"time"
-
-	"github.com/coreos/go-iptables/iptables"
 
 	"github.com/sirupsen/logrus"
 )
 
 func run() {
-	logrus.Info("[main] starting clash...")
+	logrus.Info("[main] starting tpclash...")
 
 	var err error
-	if err = enableProxy(); err != nil {
+	if err = proxyMode.EnableForward(); err != nil {
 		logrus.Fatalf("failed to enable proxy: %v", err)
 	}
 
 	uid, gid := getUserIDs(conf.ClashUser)
-
+	if conf.ProxyMode == "ebpf" {
+		// use root user in ebpf mode, see also: https://github.com/cilium/ebpf/issues/244
+		uid, gid = 0, 0
+	}
 	cmd := exec.Command(filepath.Join(conf.ClashHome, "xclash"), "-f", conf.ClashConfig, "-d", conf.ClashHome, "-ext-ui", filepath.Join(conf.ClashHome, conf.ClashUI))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -47,12 +44,18 @@ func run() {
 		logrus.Error(err)
 		cancel()
 	}
+	if cmd.Process == nil {
+		logrus.Errorf("failed to start clash process: %v", cmd.Args)
+		cancel()
+	}
 
 	<-time.After(3 * time.Second)
 	logrus.Info("[main] 🍄 提莫队长正在待命...")
-	<-ctx.Done()
 
-	if err = disableProxy(); err != nil {
+	<-ctx.Done()
+	logrus.Info("[main] 🛑 TPClash 正在停止...")
+
+	if err = proxyMode.DisableForward(); err != nil {
 		logrus.Error(err)
 	}
 
@@ -62,57 +65,5 @@ func run() {
 		}
 	}
 
-	logrus.Info("TPClash exit...")
-}
-
-func enableProxy() error {
-	m, err := getProxyMode()
-	if err != nil {
-		return err
-	}
-
-	return process(m.addForward, m.addForwardDNS, m.addLocal, m.addLocalDNS, m.apply)
-}
-
-func disableProxy() error {
-	m, err := getProxyMode()
-	if err != nil {
-		return err
-	}
-
-	return process(m.delForward, m.delForwardDNS, m.delLocal, m.delLocalDNS, m.clean)
-}
-
-func getProxyMode() (ProxyMode, error) {
-	var m ProxyMode
-
-	switch strings.ToLower(conf.ProxyMode) {
-	case "tproxy":
-		ip4, err := newIPTables(iptables.ProtocolIPv4)
-		if err != nil {
-			return nil, err
-		}
-
-		m = &tproxyMode{
-			ins:  ip4,
-			tpcc: &conf,
-			cc:   clashConf,
-		}
-	case "tun":
-
-	default:
-		return nil, fmt.Errorf("unsupported proxy mode: %s", conf.ProxyMode)
-	}
-
-	return m, nil
-}
-
-func process(fns ...func() error) error {
-	var err error
-	for _, fn := range fns {
-		if err = fn(); err != nil {
-			return err
-		}
-	}
-	return nil
+	logrus.Info("[main] 🛑 TPClash 已关闭!")
 }

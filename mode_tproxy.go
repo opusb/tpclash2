@@ -1,6 +1,3 @@
-//go:build linux
-// +build linux
-
 package main
 
 import (
@@ -378,4 +375,12 @@ func (m *tproxyMode) clean() error {
 		logrus.Warnf("failed to clean route: %s, %v", strings.TrimSpace(string(bs)), err)
 	}
 	return nil
+}
+
+func (m *tproxyMode) EnableForward() error {
+	return process(m.addForward, m.addForwardDNS, m.addLocal, m.addLocalDNS, m.apply)
+}
+
+func (m *tproxyMode) DisableForward() error {
+	return process(m.delForward, m.delForwardDNS, m.delLocal, m.delLocalDNS, m.clean)
 }
