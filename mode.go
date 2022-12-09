@@ -51,8 +51,8 @@ func parseProxyMode() error {
 			cc:   &clashConf,
 		}
 		return nil
-	case "ebpf":
-		proxyMode = &ebpfMode{
+	case "tun":
+		proxyMode = &tunMode{
 			ins:  ip4,
 			tpcc: &conf,
 			cc:   &clashConf,

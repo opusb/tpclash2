@@ -25,7 +25,7 @@ func init() {
 	cobra.EnableCommandSorting = false
 	cobra.OnInitialize(tpClashInit)
 
-	rootCmd.PersistentFlags().StringVarP(&conf.ProxyMode, "proxy-mode", "m", "ebpf", "clash proxy mode(tproxy|ebpf)")
+	rootCmd.PersistentFlags().StringVarP(&conf.ProxyMode, "proxy-mode", "m", "tun", "clash proxy mode(tproxy|tun)")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashHome, "home", "d", "/data/clash", "clash home dir")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashConfig, "config", "c", "/etc/clash.yaml", "clash config path")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashUI, "ui", "u", "yacd", "clash dashboard(official/yacd)")

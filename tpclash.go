@@ -21,10 +21,6 @@ func run() {
 	}
 
 	uid, gid := getUserIDs(conf.ClashUser)
-	if conf.ProxyMode == "ebpf" {
-		// use root user in ebpf mode, see also: https://github.com/cilium/ebpf/issues/244
-		uid, gid = 0, 0
-	}
 	cmd := exec.Command(filepath.Join(conf.ClashHome, "xclash"), "-f", conf.ClashConfig, "-d", conf.ClashHome, "-ext-ui", filepath.Join(conf.ClashHome, conf.ClashUI))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

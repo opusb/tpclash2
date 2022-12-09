@@ -58,15 +58,15 @@ func parseClashConf() error {
 		if routingMark > 0 {
 			return fmt.Errorf("routing-mark cannot be set in tproxy mode(routing-mark)")
 		}
-	case "ebpf":
+	case "tun":
 		if tproxyPort > 0 {
-			return fmt.Errorf("please delete the tproxy port in ebpf mode(tproxy-port)")
+			return fmt.Errorf("please delete the tproxy port in tun mode(tproxy-port)")
 		}
 		if !tunEnabled {
-			return fmt.Errorf("tun must be enabled in ebpf mode(tun.enable)")
+			return fmt.Errorf("tun must be enabled in tun mode(tun.enable)")
 		}
 		if routingMark < 1 {
-			return fmt.Errorf("routing-mark must be set in ebpf mode(routing-mark)")
+			return fmt.Errorf("routing-mark must be set in tun mode(routing-mark)")
 		}
 	}
 
