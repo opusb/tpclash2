@@ -2,18 +2,16 @@
 
 > 这是一个用于 Clash Premium 的透明代理辅助工具, 由于众所周知周知的原因(**手笨**)而创建的.
 
-## 一、TPClash 有啥用
+## 一、TPClash 是什么
 
-> 说人话: 一个 TPClash 二进制文件 + 一个 Clash 配置文件 = 一条命令启动透明代理
+TPClash 可以自动安装 Clash Premium, 并自动配置基于 TProxy/Tun 的透明代理; 透明代理同时支持 TCP 和 UDP 协议, 包括对 DNS 的自动配置和 ICMP 的劫持等.
 
-TPClash 可以自动安装 Clash Premium, 并自动配置基于 TProxy 的透明代理; 透明代理同时支持 TCP 和 UDP 协议, 包括对 DNS 的自动配置和 ICMP 的劫持等.
-
-**TPClash 的透明代理规则、日志配置、Dashboard(UI) 配置等全部从标准的 Clash Premium 配置文件内读取,并完成自适应; TPClash 暂时不会创建自己的自定义
+**TPClash 的透明代理规则、日志配置、Dashboard(UI) 配置等全部从标准的 Clash Premium 配置文件内读取, 并完成自适应; TPClash 暂时不会创建自己的自定义
 配置文件(减轻使用负担).**
 
 **同时 TPClash 在终止后会清理自己创建的 iptables 规则和路由表(防止把机器搞没); 这种清理不会简单的执行 `iptables -F/-X`, 而是进行 "定点清除", 以防止误删用户规则.**
 
-## 二、TPClash 怎么用
+## 二、TPClash 使用
 
 TPClash 只有一个二进制文件, 直接从 Release 页面下载二进制文件运行即可. TPClash 二进制内嵌入了目标平台的 Clash 二进制文件以及其他资源文件(All in one), 
 启动后会自动释放, 所以无需再下载 Clash. 
@@ -24,11 +22,16 @@ TPClash 只有一个二进制文件, 直接从 Release 页面下载二进制文�
 ./tpclash run -c /etc/clash.yaml
 ```
 
-**TPClash 对 Clash 配置文件有以下要求(端口可以更换, TPClash 会自适应):**
+**根据使用模式不同, TPClash 对 Clash 配置文件有不同的要求; 目前默认为 TUN 模式(对宿主机的 docker 等兼容性比较好), 可以通过 `-m` 参数自行切换.**
+
+### 2.1、TProxy 模式配置
 
 ```yaml
 # 需要开启 tproxy 端口
 tproxy-port: 7893
+
+# 请指定自己实际的借口名称
+interface-name: ens160
 
 # 开启 DNS 配置, 且使用 fake-ip 模式
 # DNS 监听地址至少保证 127.0.0.1 可达
@@ -42,6 +45,38 @@ dns:
     - 114.114.114.114
 ```
 
+### 2.2、TUN 模式配置
+
+```yaml
+# 请指定自己实际的借口名称
+interface-name: ens160
+
+# 需要开启 TUN 配置
+tun:
+  enable: true
+  stack: system # or gvisor
+  dns-hijack:
+    - any:53
+  #   - 8.8.8.8:53
+  #   - tcp://8.8.8.8:53
+
+# 需要指定全局 routing-mark(值可更改)
+routing-mark: 666
+
+# 开启 DNS 配置, 且使用 fake-ip 模式
+# DNS 监听地址至少保证 127.0.0.1 可达
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  default-nameserver:
+    - 114.114.114.114
+  nameserver:
+    - 114.114.114.114
+```
+
+### 2.3、启动 TPClash
+
 **初次使用的用户推荐命令行执行, 如果出现规则冲突导致断网情况(理论上不会)可以简单的通过重启解决. TPClash 支持的所有命令可以通过 `--help` 查看:**
 
 ```sh
@@ -49,23 +84,23 @@ root@test62 ~ # ❯❯❯ ./tpclash --help
 Transparent proxy tool for Clash
 
 Usage:
-  tpclash [command]
-
-Available Commands:
-  run         Run tpclash
-  clean       Clean tpclash iptables and route config
-  extract     Extract embed files
-  help        Help about any command
-  completion  Generate the autocompletion script for the specified shell
+  tpclash [flags]
 
 Flags:
-  -c, --config string   clash config path (default "/etc/clash.yaml")
-  -h, --help            help for tpclash
-  -d, --home string     clash home dir (default "/data/clash")
-      --mmdb            extract Country.mmdb file (default true)
-  -u, --ui string       clash dashboard(official/yacd) (default "yacd")
-
-Use "tpclash [command] --help" for more information about a command.
+      --clash-user string     clash runtime user (default "tpclash")
+  -c, --config string         clash config path (default "/etc/clash.yaml")
+      --debug                 enable debug log
+      --direct-group string   skip tproxy group (default "tpdirect")
+      --disable-extract       disable extract files
+  -h, --help                  help for tpclash
+      --hijack-dns strings    hijack the target DNS address (default "0.0.0.0/0")
+      --hijack-ip string      hijack target IP traffic (all|IP_ADDRESS)
+  -d, --home string           clash home dir (default "/data/clash")
+      --local-proxy           enable local proxy (default true)
+  -m, --proxy-mode string     clash proxy mode(tproxy|tun) (default "tun")
+      --tproxy-mark string    tproxy mark (default "666")
+  -u, --ui string             clash dashboard(official/yacd) (default "yacd")
+  -v, --version               version for tpclash
 ```
 
 ## 三、TPClash 做了什么
