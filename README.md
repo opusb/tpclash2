@@ -19,7 +19,7 @@ TPClash 只有一个二进制文件, 直接从 Release 页面下载二进制文�
 **注意: TPClash 默认会读取 位于 `/etc/clash.yaml` 的 clash 配置文件, 如果 clash 配置文件在其他位置请自行修改.**
 
 ```sh
-./tpclash run -c /etc/clash.yaml
+./tpclash -c /etc/clash.yaml
 ```
 
 **根据使用模式不同, TPClash 对 Clash 配置文件有不同的要求; 目前默认为 TUN 模式(对宿主机的 docker 等兼容性比较好), 可以通过 `-m` 参数自行切换.**
@@ -140,4 +140,4 @@ task # go-task 安装成功后会包含此命令
 TPClash 默认释放的文件包含了 [Loyalsoldier/clash-rules](https://github.com/Loyalsoldier/clash-rules) 相关文件, 可在规则中直接使用;
 
 **TPClash 同时也释放了 [Hackl0us/GeoIP2-CN](https://github.com/Hackl0us/GeoIP2-CN) 项目的 Country.mmdb 文件, 该 GeoIP 数据库
-仅包含中国大陆地区 IP, 所以如果使用 `GEOIP, US, PROXY` 等其他国家规则会失败; 可通过 `--mmdb=false` 禁止此行为(选项中间一定要有 `=`).**
+仅包含中国大陆地区 IP, 所以如果使用 `GEOIP, US, PROXY` 等其他国家规则会失败.**
