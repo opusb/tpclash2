@@ -103,6 +103,18 @@ Flags:
   -v, --version               version for tpclash
 ```
 
+### 2.4、自动流量接管
+
+从 `v0.0.13` 版本起, TPClash 内置了一个 ARP 流量劫持功能, 可以通过 `--hijack-ip` 选项指定需要劫持的 IP 地址:
+
+```sh
+# 可以指定多次
+./tpclash-linux-amd64 --hijack-ip 172.16.11.92 --hijack-ip 172.16.11.93
+```
+
+当该选项被设置后, TPClash 将会对目标 IP 发起 ARP 攻击, 从而强制接管目标地址的流量. 需要注意的是, 当目标 IP 被设置为 `0.0.0.0`
+时, TPClash 将会劫持所有内网流量, 这可能会因为配置错误导致整体断网, 所以请谨慎操作.
+
 ## 三、TPClash 做了什么
 
 **TPClash 在启动后会进行如下动作:**

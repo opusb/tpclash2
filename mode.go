@@ -37,28 +37,26 @@ func process(fns ...func() error) error {
 	return nil
 }
 
-func parseProxyMode() error {
+func NewProxyMode(cc *ClashConf, tpcc *TPClashConf) (ProxyMode, error) {
 	ip4, err := newIPTables(iptables.ProtocolIPv4)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	switch strings.ToLower(conf.ProxyMode) {
 	case "tproxy":
-		proxyMode = &tproxyMode{
+		return &tproxyMode{
 			ins:  ip4,
-			tpcc: &conf,
-			cc:   &clashConf,
-		}
-		return nil
+			tpcc: tpcc,
+			cc:   cc,
+		}, nil
 	case "tun":
-		proxyMode = &tunMode{
+		return &tunMode{
 			ins:  ip4,
-			tpcc: &conf,
-			cc:   &clashConf,
-		}
-		return nil
+			tpcc: tpcc,
+			cc:   cc,
+		}, nil
 	}
 
-	return fmt.Errorf("unsupported proxy mode: %s", conf.ProxyMode)
+	return nil, fmt.Errorf("unsupported proxy mode: %s", conf.ProxyMode)
 }

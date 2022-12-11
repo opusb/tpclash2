@@ -9,9 +9,37 @@ import (
 	"github.com/spf13/viper"
 )
 
-// parseClashConf Parses clash configuration and performs necessary checks
+type TPClashConf struct {
+	ProxyMode string
+
+	ClashHome   string
+	ClashConfig string
+	ClashUI     string
+	LocalProxy  bool
+
+	TproxyMark     string
+	ClashUser      string
+	DirectGroup    string
+	HijackIP       []net.IP
+	HijackDNS      []string
+	DisableExtract bool
+
+	Debug bool
+}
+
+type ClashConf struct {
+	Debug         bool
+	EnhancedMode  string
+	DNSHost       string
+	DNSPort       string
+	TProxyPort    string
+	FakeIPRange   string
+	InterfaceName string
+}
+
+// ParseClashConf Parses clash configuration and performs necessary checks
 // based on proxy mode
-func parseClashConf() error {
+func ParseClashConf() (*ClashConf, error) {
 	debug := viper.GetString("log-level")
 	enhancedMode := viper.GetString("dns.enhanced-mode")
 	dnsListen := viper.GetString("dns.listen")
@@ -23,24 +51,24 @@ func parseClashConf() error {
 
 	// common check
 	if strings.ToLower(enhancedMode) != "fake-ip" {
-		return fmt.Errorf("only support fake-ip dns mode(dns.enhanced-mode)")
+		return nil, fmt.Errorf("only support fake-ip dns mode(dns.enhanced-mode)")
 	}
 
 	dnsHost, dnsPort, err := net.SplitHostPort(dnsListen)
 	if err != nil {
-		return fmt.Errorf("failed to parse clash dns listen config(dns.listen): %v", err)
+		return nil, fmt.Errorf("failed to parse clash dns listen config(dns.listen): %v", err)
 	}
 
 	dport, err := strconv.Atoi(dnsPort)
 	if err != nil {
-		return fmt.Errorf("failed to parse clash dns listen config(dns.listen): %v", err)
+		return nil, fmt.Errorf("failed to parse clash dns listen config(dns.listen): %v", err)
 	}
 	if dport < 1 {
-		return fmt.Errorf("dns port in clash config is missing(dns.listen)")
+		return nil, fmt.Errorf("dns port in clash config is missing(dns.listen)")
 	}
 
 	if interfaceName == "" {
-		return fmt.Errorf("failed to parse clash interface name(interface-name): interface-name must be set")
+		return nil, fmt.Errorf("failed to parse clash interface name(interface-name): interface-name must be set")
 	}
 
 	if fakeIPRange == "" {
@@ -50,27 +78,27 @@ func parseClashConf() error {
 	switch conf.ProxyMode {
 	case "tproxy":
 		if tproxyPort < 1 {
-			return fmt.Errorf("tproxy port in clash config is missing(tproxy-port)")
+			return nil, fmt.Errorf("tproxy port in clash config is missing(tproxy-port)")
 		}
 		if tunEnabled {
-			return fmt.Errorf("tun must be disabled in tproxy mode(tun.enable)")
+			return nil, fmt.Errorf("tun must be disabled in tproxy mode(tun.enable)")
 		}
 		if routingMark > 0 {
-			return fmt.Errorf("routing-mark cannot be set in tproxy mode(routing-mark)")
+			return nil, fmt.Errorf("routing-mark cannot be set in tproxy mode(routing-mark)")
 		}
 	case "tun":
 		if tproxyPort > 0 {
-			return fmt.Errorf("please delete the tproxy port in tun mode(tproxy-port)")
+			return nil, fmt.Errorf("please delete the tproxy port in tun mode(tproxy-port)")
 		}
 		if !tunEnabled {
-			return fmt.Errorf("tun must be enabled in tun mode(tun.enable)")
+			return nil, fmt.Errorf("tun must be enabled in tun mode(tun.enable)")
 		}
 		if routingMark < 1 {
-			return fmt.Errorf("routing-mark must be set in tun mode(routing-mark)")
+			return nil, fmt.Errorf("routing-mark must be set in tun mode(routing-mark)")
 		}
 	}
 
-	clashConf = ClashConf{
+	return &ClashConf{
 		Debug:         strings.ToLower(debug) == "debug",
 		EnhancedMode:  enhancedMode,
 		DNSHost:       dnsHost,
@@ -78,7 +106,5 @@ func parseClashConf() error {
 		TProxyPort:    strconv.Itoa(tproxyPort),
 		FakeIPRange:   fakeIPRange,
 		InterfaceName: interfaceName,
-	}
-
-	return nil
+	}, nil
 }

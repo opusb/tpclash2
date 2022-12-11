@@ -1,15 +1,26 @@
 package main
 
 import (
+	"context"
+	"io"
+	"os"
+	"os/exec"
+	"os/signal"
+	"path/filepath"
+	"syscall"
+	"time"
+
+	"github.com/irai/packet/fastlog"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
-	conf      TPClashConf
-	clashConf ClashConf
-	proxyMode ProxyMode
+	conf        TPClashConf
+	clashConf   *ClashConf
+	proxyMode   ProxyMode
+	arpHijacker *ARPHijacker
 )
 
 var commit string
@@ -18,7 +29,64 @@ var rootCmd = &cobra.Command{
 	Use:     "tpclash",
 	Short:   "Transparent proxy tool for Clash",
 	Version: commit,
-	Run:     func(cmd *cobra.Command, args []string) { run() },
+	Run: func(_ *cobra.Command, _ []string) {
+		var err error
+
+		logrus.Info("[main] starting tpclash...")
+
+		uid, gid := getUserIDs(conf.ClashUser)
+		cmd := exec.Command(filepath.Join(conf.ClashHome, "xclash"), "-f", conf.ClashConfig, "-d", conf.ClashHome, "-ext-ui", filepath.Join(conf.ClashHome, conf.ClashUI))
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Credential: &syscall.Credential{
+				Uid: uid,
+				Gid: gid,
+			},
+			AmbientCaps: []uintptr{CAP_NET_BIND_SERVICE, CAP_NET_ADMIN, CAP_NET_RAW},
+		}
+
+		logrus.Debugf("[clash] running cmds: %v", cmd.Args)
+
+		ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+		defer cancel()
+		if err = cmd.Start(); err != nil {
+			logrus.Error(err)
+			cancel()
+		}
+		if cmd.Process == nil {
+			logrus.Errorf("failed to start clash process: %v", cmd.Args)
+			cancel()
+		}
+
+		if err = proxyMode.EnableForward(); err != nil {
+			logrus.Fatalf("failed to enable proxy: %v", err)
+		}
+
+		if conf.HijackIP != nil {
+			if err = arpHijacker.hijack(ctx); err != nil {
+				logrus.Fatalf("failed to start arp hijack: %v", err)
+			}
+		}
+
+		<-time.After(3 * time.Second)
+		logrus.Info("[main] 🍄 提莫队长正在待命...")
+
+		<-ctx.Done()
+		logrus.Info("[main] 🛑 TPClash 正在停止...")
+
+		if err = proxyMode.DisableForward(); err != nil {
+			logrus.Error(err)
+		}
+
+		if cmd.Process != nil {
+			if err = cmd.Process.Kill(); err != nil {
+				logrus.Error(err)
+			}
+		}
+
+		logrus.Info("[main] 🛑 TPClash 已关闭!")
+	},
 }
 
 func init() {
@@ -36,7 +104,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&conf.ClashUser, "clash-user", defaultClashUser, "clash runtime user")
 	rootCmd.PersistentFlags().StringVar(&conf.DirectGroup, "direct-group", defaultDirectGroup, "skip tproxy group")
 	rootCmd.PersistentFlags().StringSliceVar(&conf.HijackDNS, "hijack-dns", nil, "hijack the target DNS address (default \"0.0.0.0/0\")")
-	rootCmd.PersistentFlags().StringVar(&conf.HijackIP, "hijack-ip", "", "hijack target IP traffic (all|IP_ADDRESS)")
+	rootCmd.PersistentFlags().IPSliceVar(&conf.HijackIP, "hijack-ip", nil, "hijack target IP traffic")
 	rootCmd.PersistentFlags().BoolVar(&conf.DisableExtract, "disable-extract", false, "disable extract files")
 
 }
@@ -69,16 +137,20 @@ func tpClashInit() {
 		logrus.Fatalf("failed to load clash config: %v", err)
 	}
 
-	if err = parseClashConf(); err != nil {
+	if clashConf, err = ParseClashConf(); err != nil {
 		logrus.Fatal(err)
 	}
 
-	if err = parseProxyMode(); err != nil {
+	if proxyMode, err = NewProxyMode(clashConf, &conf); err != nil {
 		logrus.Fatal(err)
 	}
+
+	arpHijacker = NewARPHijacker(clashConf, &conf)
 
 	if clashConf.Debug || conf.Debug {
 		logrus.SetLevel(logrus.DebugLevel)
+	} else {
+		fastlog.DefaultIOWriter = io.Discard
 	}
 
 	// copy static files
