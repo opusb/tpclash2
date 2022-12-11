@@ -94,7 +94,7 @@ Flags:
       --disable-extract       disable extract files
   -h, --help                  help for tpclash
       --hijack-dns strings    hijack the target DNS address (default "0.0.0.0/0")
-      --hijack-ip string      hijack target IP traffic (all|IP_ADDRESS)
+      --hijack-ip ipSlice     hijack target IP traffic (default [])
   -d, --home string           clash home dir (default "/data/clash")
       --local-proxy           enable local proxy (default true)
   -m, --proxy-mode string     clash proxy mode(tproxy|tun) (default "tun")
