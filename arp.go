@@ -88,10 +88,10 @@ func (h *ARPHijacker) hijack(ctx context.Context) error {
 
 				switch notification.Online {
 				case true:
-					logrus.Infof("[ARP] %s is online...", notification)
+					logrus.Infof("[ARP] %s %s is online...", notification.Addr.IP.String(), notification.Addr.MAC.String())
 					_, _ = sf.StartHunt(notification.Addr)
 				default:
-					logrus.Warnf("[ARP] %s is offline...", notification)
+					logrus.Warnf("[ARP] %s %s is offline...", notification.Addr.IP.String(), notification.Addr.MAC.String())
 					_, _ = sf.StopHunt(notification.Addr)
 				}
 			}
