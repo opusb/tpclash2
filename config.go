@@ -23,6 +23,7 @@ type TPClashConf struct {
 	HijackIP       []net.IP
 	HijackDNS      []string
 	DisableExtract bool
+	AutoExit       bool
 
 	Debug bool
 }
