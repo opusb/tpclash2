@@ -8,6 +8,7 @@ const (
 )
 
 const (
+	tableFilter = "filter"
 	tableMangle = "mangle"
 	tableNat    = "nat"
 
@@ -17,7 +18,9 @@ const (
 	chainIP4DNSLocal = "TP_CLASH_DNS_LOCAL_V4"
 	chainOutput      = "OUTPUT"
 	chainPreRouting  = "PREROUTING"
+	chainDockerUser  = "DOCKER-USER"
 
+	actionAccept   = "ACCEPT"
 	actionReturn   = "RETURN"
 	actionTProxy   = "TPROXY"
 	actionRedirect = "REDIRECT"

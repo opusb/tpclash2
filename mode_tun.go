@@ -129,6 +129,35 @@ func (m *tunMode) delLocalDNS() error {
 	return nil
 }
 
+func (m *tunMode) addMisc() error {
+	ok, err := m.ins.ChainExists(tableFilter, chainDockerUser)
+	if err != nil {
+		return fmt.Errorf("failed to check chain %s/%s: %s", tableFilter, chainDockerUser, err)
+	}
+	if ok {
+		// iptables -t filter -I DOCKER-USER -j ACCEPT
+		err = m.ins.Insert(tableFilter, chainDockerUser, 1, "-j", actionAccept)
+		if err != nil {
+			return fmt.Errorf("failed to append docker rules: %v", err)
+		}
+	}
+	return nil
+}
+func (m *tunMode) delMisc() error {
+	ok, err := m.ins.ChainExists(tableFilter, chainDockerUser)
+	if err != nil {
+		return nil
+	}
+	if ok {
+		// iptables -t filter -I DOCKER-USER -j ACCEPT
+		err = m.ins.DeleteIfExists(tableFilter, chainDockerUser, "-j", actionAccept)
+		if err != nil {
+			return fmt.Errorf("failed to delete docker rules: %v", err)
+		}
+	}
+	return nil
+}
+
 func (m *tunMode) apply() error {
 	logrus.Info("[iptables] apply all rules...")
 
@@ -151,9 +180,9 @@ func (m *tunMode) apply() error {
 func (m *tunMode) clean() error { return nil }
 
 func (m *tunMode) EnableForward() error {
-	return process(m.addForward, m.addForwardDNS, m.addLocal, m.addLocalDNS, m.apply)
+	return process(m.addForward, m.addForwardDNS, m.addLocal, m.addLocalDNS, m.addMisc, m.apply)
 }
 
 func (m *tunMode) DisableForward() error {
-	return process(m.delForward, m.delForwardDNS, m.delLocal, m.delLocalDNS, m.clean)
+	return process(m.delForward, m.delForwardDNS, m.delLocal, m.delLocalDNS, m.delMisc, m.clean)
 }

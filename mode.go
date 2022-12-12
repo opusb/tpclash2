@@ -20,6 +20,9 @@ type ProxyMode interface {
 	addLocalDNS() error
 	delLocalDNS() error
 
+	addMisc() error
+	delMisc() error
+
 	apply() error
 	clean() error
 
