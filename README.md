@@ -98,6 +98,7 @@ Flags:
   -d, --home string           clash home dir (default "/data/clash")
       --local-proxy           enable local proxy (default true)
   -m, --proxy-mode string     clash proxy mode(tproxy|tun) (default "tun")
+      --test                  run in test mode, exit automatically after 5 minutes
       --tproxy-mark string    tproxy mark (default "666")
   -u, --ui string             clash dashboard(official/yacd) (default "yacd")
   -v, --version               version for tpclash
