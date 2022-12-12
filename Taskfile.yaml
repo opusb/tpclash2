@@ -7,9 +7,9 @@ tasks:
       - mkdir -p build/{yacd,official} static/ruleset
   build-dashboard:
     cmds:
-      - curl -sSL https://github.com/STASH-NETWORKS-LIMITED/yacd/tarball/master -o build/yacd.tgz
+      - curl -sSL https://github.com/STASH-NETWORKS-LIMITED/yacd/tarball/master > build/yacd.tgz
       - defer: rm -f build/yacd.tgz
-      - curl -sSL https://github.com/Dreamacro/clash-dashboard/tarball/master -o build/official.tgz
+      - curl -sSL https://github.com/Dreamacro/clash-dashboard/tarball/master > build/official.tgz
       - defer: rm -f build/official.tgz
       - tar -zxf build/yacd.tgz --strip-components 1 -C build/yacd
       - defer: rm -rf build/yacd
@@ -19,32 +19,52 @@ tasks:
       - (cd build/official && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
       - cp -r build/yacd/public static/yacd
       - cp -r build/official/dist static/official
+    status:
+      - test -d static/yacd
+      - test -d static/official
   download-ruleset:
     cmds:
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt -o static/ruleset/reject.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt -o static/ruleset/icloud.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt -o static/ruleset/apple.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt -o static/ruleset/google.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt -o static/ruleset/proxy.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt -o static/ruleset/direct.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt -o static/ruleset/private.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt -o static/ruleset/gfw.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/greatfire.txt -o static/ruleset/greatfire.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/tld-not-cn.txt -o static/ruleset/tld-not-cn.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt -o static/ruleset/telegramcidr.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt -o static/ruleset/cncidr.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt -o static/ruleset/lancidr.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt -o static/ruleset/applications.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt > static/ruleset/reject.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt > static/ruleset/icloud.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt > static/ruleset/apple.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt > static/ruleset/google.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt > static/ruleset/proxy.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt > static/ruleset/direct.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt > static/ruleset/private.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt > static/ruleset/gfw.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/greatfire.txt > static/ruleset/greatfire.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/tld-not-cn.txt > static/ruleset/tld-not-cn.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt > static/ruleset/telegramcidr.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt > static/ruleset/cncidr.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt > static/ruleset/lancidr.yaml
+      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/applications.txt > static/ruleset/applications.yaml
+    status:
+      - test -f static/ruleset/reject.yaml
+      - test -f static/ruleset/icloud.yaml
+      - test -f static/ruleset/apple.yaml
+      - test -f static/ruleset/google.yaml
+      - test -f static/ruleset/proxy.yaml
+      - test -f static/ruleset/direct.yaml
+      - test -f static/ruleset/private.yaml
+      - test -f static/ruleset/gfw.yaml
+      - test -f static/ruleset/greatfire.yaml
+      - test -f static/ruleset/tld-not-cn.yaml
+      - test -f static/ruleset/telegramcidr.yaml
+      - test -f static/ruleset/cncidr.yaml
+      - test -f static/ruleset/lancidr.yaml
+      - test -f static/ruleset/applications.yaml
   download-mmdb:
     cmds:
-      - curl -sSL https://cdn.jsdelivr.net/gh/Hackl0us/GeoIP2-CN@release/Country.mmdb -o static/Country.mmdb
+      - curl -sSL https://cdn.jsdelivr.net/gh/Hackl0us/GeoIP2-CN@release/Country.mmdb > static/Country.mmdb
+    status:
+      - test -f static/Country.mmdb
   download-clash:
     vars:
       CLASH_URL:
         sh: curl -sSL https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq '.assets[].browser_download_url | select (. | test("clash-{{.TASK}}-\\d{4}.*gz"))'
     cmds:
       - rm -rf build/clash-{{.TASK}}.gz build/clash-{{.TASK}} static/xclash
-      - curl -sSL {{.CLASH_URL}} -o build/clash-{{.TASK}}.gz
+      - curl -sSL {{.CLASH_URL}} > build/clash-{{.TASK}}.gz
       - gzip -d build/clash-{{.TASK}}.gz
       - mv build/clash-{{.TASK}} static/xclash
       - chmod +x static/xclash

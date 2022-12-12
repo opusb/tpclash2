@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -93,6 +94,10 @@ func (h *ARPHijacker) hijack(ctx context.Context) error {
 				default:
 					logrus.Warnf("[ARP] %s %s is offline...", notification.Addr.IP.String(), notification.Addr.MAC.String())
 					_, _ = sf.StopHunt(notification.Addr)
+				}
+			case <-time.Tick(10 * time.Second):
+				if err = sf.Scan(); err != nil {
+					logrus.Errorf("[ARP] failed to scan: %v", err)
 				}
 			}
 		}
