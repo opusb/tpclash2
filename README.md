@@ -122,7 +122,7 @@ iptables:
 
 ```sh
 # 可以指定多次
-./tpclash-linux-amd64 --hijack-ip 172.16.11.92 --hijack-ip 172.16.11.93
+./tpclash --hijack-ip 172.16.11.92 --hijack-ip 172.16.11.93
 ```
 
 当该选项被设置后, TPClash 将会对目标 IP 发起 ARP 攻击, 从而强制接管目标地址的流量. 需要注意的是, 当目标 IP 被设置为 `0.0.0.0`
