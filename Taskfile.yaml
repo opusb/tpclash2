@@ -2,27 +2,25 @@ version: '3'
 
 tasks:
   clean:
+    desc: Clean Build Dir
     cmds:
       - rm -rf build static
-      - mkdir -p build/{yacd,official} static/ruleset
-  build-dashboard:
-    cmds:
-      - curl -sSL https://github.com/STASH-NETWORKS-LIMITED/yacd/tarball/master > build/yacd.tgz
-      - defer: rm -f build/yacd.tgz
-      - curl -sSL https://github.com/Dreamacro/clash-dashboard/tarball/master > build/official.tgz
-      - defer: rm -f build/official.tgz
-      - tar -zxf build/yacd.tgz --strip-components 1 -C build/yacd
-      - defer: rm -rf build/yacd
-      - tar -zxf build/official.tgz --strip-components 1 -C build/official
-      - defer: rm -rf build/official
-      - (cd build/yacd && yarn install > /dev/null 2>&1 && yarn build > /dev/null 2>&1)
-      - (cd build/official && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
-      - cp -r build/yacd/public static/yacd
-      - cp -r build/official/dist static/official
     status:
-      - test -d static/yacd
-      - test -d static/official
+      - test ! -d build
+      - test ! -d static
+
+  mkdir:
+    desc: Create Build Dir
+    cmds:
+      - mkdir -p build/{yacd,official,meta,dist} static/ruleset
+    status:
+      - test -d build/yacd
+      - test -d build/official
+      - test -d build/meta
+      - test -d build/dist
+      - test -d static/ruleset
   download-ruleset:
+    desc: Download Loyalsoldier RuleSet
     cmds:
       - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt > static/ruleset/reject.yaml
       - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt > static/ruleset/icloud.yaml
@@ -53,172 +51,343 @@ tasks:
       - test -f static/ruleset/cncidr.yaml
       - test -f static/ruleset/lancidr.yaml
       - test -f static/ruleset/applications.yaml
+
   download-mmdb:
+    desc: Download GeoIP2-CN MMDB
     cmds:
       - curl -sSL https://cdn.jsdelivr.net/gh/Hackl0us/GeoIP2-CN@release/Country.mmdb > static/Country.mmdb
     status:
       - test -f static/Country.mmdb
-  download-clash:
+
+  download-premium-dashboard:
+    desc: Download Clash Premium Dashboard
+    cmds:
+      - curl -sSL https://github.com/STASH-NETWORKS-LIMITED/yacd/tarball/master > build/yacd.tgz
+      - curl -sSL https://github.com/Dreamacro/clash-dashboard/tarball/master > build/official.tgz
+    status:
+      - test -f build/yacd.tgz
+      - test -f build/official.tgz
+
+  download-meta-dashboard:
+    desc: Download Clash Meta Dashboard
+    cmds:
+      - curl -sSL https://github.com/MetaCubeX/Razord-meta/tarball/master > build/meta.tgz
+    status:
+      - test -f build/meta.tgz
+
+  build-premium-dashboard:
+    desc: Build Clash Premium Dashboard
+    cmds:
+      - tar -zxf build/yacd.tgz --strip-components 1 -C build/yacd
+      - defer: rm -rf build/yacd
+      - tar -zxf build/official.tgz --strip-components 1 -C build/official
+      - defer: rm -rf build/official
+      - (cd build/yacd && yarn install > /dev/null 2>&1 && yarn build > /dev/null 2>&1)
+      - (cd build/official && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
+      - cp -r build/yacd/public static/yacd
+      - cp -r build/official/dist static/official
+    status:
+      - test -d static/yacd
+      - test -d static/official
+
+  build-meta-dashboard:
+    desc: Build Clash Meta Dashboard
+    cmds:
+      - tar -zxf build/meta.tgz --strip-components 1 -C build/meta
+      - defer: rm -rf build/meta
+      - (cd build/meta && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
+      - cp -r build/meta/dist static/meta
+    status:
+      - test -d static/meta
+
+  download-clash-premium:
+    desc: Download Clash Premium
     vars:
       CLASH_URL:
-        sh: curl -sSL https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq '.assets[].browser_download_url | select (. | test("clash-{{.TASK}}-\\d{4}.*gz"))'
+        sh: curl -sSL https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.assets[].browser_download_url | select (. | test("clash-{{.PLATFORM}}-\\d{4}.*gz"))'
     cmds:
-      - rm -rf build/clash-{{.TASK}}.gz build/clash-{{.TASK}} static/xclash
-      - curl -sSL {{.CLASH_URL}} > build/clash-{{.TASK}}.gz
-      - gzip -d build/clash-{{.TASK}}.gz
-      - mv build/clash-{{.TASK}} static/xclash
-      - chmod +x static/xclash
-  build-tpclash:
-    label: build-{{.TASK}}
+      - curl -sSL {{.CLASH_URL}} > build/clash-{{.PLATFORM}}.gz
+      - gzip -d build/clash-{{.PLATFORM}}.gz
+      - chmod +x build/clash-{{.PLATFORM}}
+    status:
+      - test -f build/clash-{{.PLATFORM}}
+
+  download-clash-meta:
+    desc: Download Clash Meta
+    vars:
+      CLASH_META_URL:
+        sh: curl -sSL https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.assets[].browser_download_url | select (. | test("Clash.Meta-{{.PLATFORM}}-v\\d+.*gz"))'
+    cmds:
+      - curl -sSL {{.CLASH_META_URL}} > build/clash-meta-{{.PLATFORM}}.gz
+      - gzip -d build/clash-meta-{{.PLATFORM}}.gz
+      - chmod +x build/clash-meta-{{.PLATFORM}}
+    status:
+      - test -f build/clash-meta-{{.PLATFORM}}
+
+  copy-clash-premium:
+    desc: Copy Clash Premium To Embed FS
+    cmds:
+      - task: download-clash-premium
+        vars: { PLATFORM: "{{.PLATFORM}}" }
+      - cp build/clash-{{.PLATFORM}} static/xclash
+
+  copy-clash-meta:
+    desc: Copy Clash Meta To Embed FS
+    cmds:
+      - task: download-clash-meta
+        vars: { PLATFORM: "{{.PLATFORM}}" }
+      - cp build/clash-meta-{{.PLATFORM}} static/xclash
+
+  build-tpclash-premium:
+    desc: Build TPClash With Clash Premium
+    label: build-premium-{{.PLATFORM}}
     vars:
       TPCLASH_COMMIT:
         sh: git rev-parse HEAD
     cmds:
+      - task: mkdir
+      - task: download-ruleset
+      - task: download-mmdb
+      - task: download-premium-dashboard
+      - task: build-premium-dashboard
+      - task: download-clash-premium
+        vars: { PLATFORM: "{{.PLATFORM}}" }
+      - task: copy-clash-premium
+        vars: { PLATFORM: "{{.PLATFORM}}" }
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
-        go build -trimpath -o build/tpclash-{{.TASK}} -ldflags \
+        go build -trimpath -o build/dist/tpclash-premium-{{.PLATFORM}} -ldflags \
         "-w -s -X main.commit={{.TPCLASH_COMMIT}}"
-  linux-386:
+
+  build-tpclash-meta:
+    desc: Build TPClash With Clash Meta
+    label: build-meta-{{.PLATFORM}}
+    vars:
+      TPCLASH_COMMIT:
+        sh: git rev-parse HEAD
     cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
+      - task: mkdir
+      - task: download-ruleset
+      - task: download-mmdb
+      - task: download-meta-dashboard
+      - task: build-meta-dashboard
+      - task: download-clash-meta
+        vars: { PLATFORM: "{{.PLATFORM}}" }
+      - task: copy-clash-meta
+        vars: { PLATFORM: "{{.PLATFORM}}" }
+      - |
+        GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
+        go build -trimpath -o build/dist/tpclash-meta-{{.PLATFORM}} -ldflags \
+        "-w -s -X main.commit={{.TPCLASH_COMMIT}}"
+
+  linux-386-premium:
+    cmds:
+      - task: build-tpclash-premium
         vars: {
-          TASK: "{{.TASK}}",
+          PLATFORM: linux-386,
           GOOS: linux,
           GOARCH: 386
         }
-  linux-amd64:
+  linux-amd64-premium:
     cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
+      - task: build-tpclash-premium
         vars: {
-          TASK: "{{.TASK}}",
+          PLATFORM: linux-amd64,
           GOOS: linux,
           GOARCH: amd64
         }
-  linux-amd64-v3:
+  linux-amd64-v3-premium:
     cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
+      - task: build-tpclash-premium
         vars: {
-          TASK: "{{.TASK}}",
+          PLATFORM: linux-amd64-v3,
           GOOS: linux,
           GOARCH: amd64,
           GOAMD64: v3
         }
-  linux-armv5:
+  linux-arm64-premium:
     cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
+      - task: build-tpclash-premium
         vars: {
-          TASK: "{{.TASK}}",
+          PLATFORM: linux-arm64,
+          GOOS: linux,
+          GOARCH: arm64
+        }
+  linux-armv5-premium:
+    cmds:
+      - task: build-tpclash-premium
+        vars: {
+          PLATFORM: linux-armv5,
           GOOS: linux,
           GOARCH: arm,
           GOARM: 5
         }
-  linux-armv6:
+  linux-armv6-premium:
     cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
+      - task: build-tpclash-premium
         vars: {
-          TASK: "{{.TASK}}",
+          PLATFORM: linux-armv6,
           GOOS: linux,
           GOARCH: arm,
           GOARM: 6
         }
-  linux-armv7:
+  linux-armv7-premium:
     cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
+      - task: build-tpclash-premium
         vars: {
-          TASK: "{{.TASK}}",
+          PLATFORM: linux-armv7,
           GOOS: linux,
           GOARCH: arm,
           GOARM: 7
         }
-  linux-armv8:
+  linux-mips-hardfloat-premium:
     cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
+      - task: build-tpclash-premium
         vars: {
-          TASK: "{{.TASK}}",
-          GOOS: linux,
-          GOARCH: arm64
-        }
-  linux-mips-hardfloat:
-    cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
-        vars: {
-          TASK: "{{.TASK}}",
+          PLATFORM: linux-mips-hardfloat,
           GOOS: linux,
           GOARCH: mips,
           GOMIPS: hardfloat
         }
-  linux-mipsle-softfloat:
+  linux-mipsle-softfloat-premium:
     cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
+      - task: build-tpclash-premium
         vars: {
-          TASK: "{{.TASK}}",
+          PLATFORM: linux-mipsle-softfloat,
           GOOS: linux,
           GOARCH: mipsle,
           GOMIPS: softfloat
         }
-  linux-mipsle-hardfloat:
+  linux-mipsle-hardfloat-premium:
     cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
+      - task: build-tpclash-premium
         vars: {
-          TASK: "{{.TASK}}",
+          PLATFORM: linux-mipsle-hardfloat,
           GOOS: linux,
           GOARCH: mipsle,
           GOMIPS: hardfloat
         }
-  linux-mips64:
+  linux-mips64-premium:
     cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
+      - task: build-tpclash-premium
         vars: {
-          TASK: "{{.TASK}}",
+          PLATFORM: linux-mips64,
           GOOS: linux,
           GOARCH: mips64
         }
-  linux-mips64le:
+  linux-mips64le-premium:
     cmds:
-      - task: download-clash
-        vars: { TASK: "{{.TASK}}" }
-      - task: build-tpclash
+      - task: build-tpclash-premium
         vars: {
-          TASK: "{{.TASK}}",
+          PLATFORM: linux-mips64le,
           GOOS: linux,
           GOARCH: mips64le
         }
+
+  linux-amd64-meta:
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-amd64-compatible,
+          GOOS: linux,
+          GOARCH: amd64,
+          GOAMD64: v2
+        }
+  linux-amd64-v3-meta:
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-amd64,
+          GOOS: linux,
+          GOARCH: amd64,
+          GOAMD64: v3
+        }
+  linux-arm64-meta:
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-arm64,
+          GOOS: linux,
+          GOARCH: arm64
+        }
+  linux-armv5-meta:
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-armv5,
+          GOOS: linux,
+          GOARCH: arm,
+          GOARM: 5
+        }
+  linux-armv6-meta:
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-armv6,
+          GOOS: linux,
+          GOARCH: arm,
+          GOARM: 6
+        }
+  linux-armv7-meta:
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-armv7,
+          GOOS: linux,
+          GOARCH: arm,
+          GOARM: 7
+        }
+  linux-mips-hardfloat-meta:
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-mips-hardfloat,
+          GOOS: linux,
+          GOARCH: mips,
+          GOMIPS: hardfloat
+        }
+  linux-mipsle-softfloat-meta:
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-mipsle-softfloat,
+          GOOS: linux,
+          GOARCH: mipsle,
+          GOMIPS: softfloat
+        }
+  linux-mipsle-hardfloat-meta:
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-mipsle-hardfloat,
+          GOOS: linux,
+          GOARCH: mipsle,
+          GOMIPS: hardfloat
+        }
+  linux-mips64-meta:
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-mips64,
+          GOOS: linux,
+          GOARCH: mips64
+        }
+  linux-mips64le-meta:
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-mips64le,
+          GOOS: linux,
+          GOARCH: mips64le
+        }
+
   default:
     cmds:
       - task: clean
-      - task: build-dashboard
-      - task: download-ruleset
-      - task: download-mmdb
-      - task: linux-386
-      - task: linux-amd64
-      - task: linux-amd64-v3
-      - task: linux-armv5
-      - task: linux-armv6
-      - task: linux-armv7
-      - task: linux-mips-hardfloat
-      - task: linux-mipsle-softfloat
-      - task: linux-mipsle-hardfloat
-      - task: linux-mips64
-      - task: linux-mips64le
+      - task: linux-386-premium
+      - task: linux-amd64-premium
+      - task: linux-amd64-v3-premium
+      - task: linux-arm64-premium
+      - task: linux-amd64-meta
+      - task: linux-amd64-v3-meta
+      - task: linux-arm64-meta

@@ -49,6 +49,7 @@ func ParseClashConf() (*ClashConf, error) {
 	interfaceName := viper.GetString("interface-name")
 	tunEnabled := viper.GetBool("tun.enable")
 	routingMark := viper.GetInt("routing-mark")
+	metaIPtables := viper.GetBool("iptables.enable")
 
 	// common check
 	if strings.ToLower(enhancedMode) != "fake-ip" {
@@ -74,6 +75,10 @@ func ParseClashConf() (*ClashConf, error) {
 
 	if fakeIPRange == "" {
 		fakeIPRange = "198.18.0.1/16"
+	}
+
+	if metaIPtables {
+		return nil, fmt.Errorf("meta kernel must turn off iptables(iptables.enable)")
 	}
 
 	switch conf.ProxyMode {
