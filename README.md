@@ -79,18 +79,6 @@ dns:
 
 **初次使用的用户推荐命令行执行并增加 `--test` 参数, 该参数保证 TPClash 在启动 5 分钟后自动退出, 如果出现断网等情况也能自行恢复. TPClash 支持的所有命令可以通过 `--help` 查看:**
 
-### 2.4、Meta 用户
-
-从 `v0.0.16` 版本开始支持 Clash Meta 分支版本, Meta 用户**需要在配置文件中关闭 iptables 配置**:
-
-```yaml
-iptables:
-  enable: false # default is false
-  inbound-interface: eth0 # detect the inbound interface, default is 'lo'
-```
-
-此外, Meta 用户如果期望使用 Meta 专用的 Dashboard 可以通过 `--ui meta` 选项指定.
-
 ```sh
 root@test62 ~ # ❯❯❯ ./tpclash --help
 Transparent proxy tool for Clash
@@ -116,7 +104,19 @@ Flags:
   -v, --version               version for tpclash
 ```
 
-### 2.4、自动流量接管
+### 2.4、Meta 用户
+
+从 `v0.0.16` 版本开始支持 Clash Meta 分支版本, Meta 用户**需要在配置文件中关闭 iptables 配置**:
+
+```yaml
+iptables:
+  enable: false # default is false
+  inbound-interface: eth0 # detect the inbound interface, default is 'lo'
+```
+
+此外, Meta 用户如果期望使用 Meta 专用的 Dashboard 可以通过 `--ui meta` 选项指定.
+
+### 2.5、自动流量接管
 
 从 `v0.0.13` 版本起, TPClash 内置了一个 ARP 流量劫持功能, 可以通过 `--hijack-ip` 选项指定需要劫持的 IP 地址:
 
