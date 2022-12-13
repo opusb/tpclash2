@@ -149,7 +149,7 @@ func (m *tunMode) delMisc() error {
 		return nil
 	}
 	if ok {
-		// iptables -t filter -I DOCKER-USER -j ACCEPT
+		// iptables -t filter -D DOCKER-USER -j ACCEPT
 		err = m.ins.DeleteIfExists(tableFilter, chainDockerUser, "-j", actionAccept)
 		if err != nil {
 			return fmt.Errorf("failed to delete docker rules: %v", err)
