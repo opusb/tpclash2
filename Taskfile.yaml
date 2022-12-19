@@ -181,6 +181,7 @@ tasks:
         "-w -s -X main.commit={{.TPCLASH_COMMIT}}"
 
   linux-386-premium:
+    desc: Build TPClash With Clash Premium(linux/386)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -189,6 +190,7 @@ tasks:
           GOARCH: 386
         }
   linux-amd64-premium:
+    desc: Build TPClash With Clash Premium(linux/amd64)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -197,6 +199,7 @@ tasks:
           GOARCH: amd64
         }
   linux-amd64-v3-premium:
+    desc: Build TPClash With Clash Premium(linux/amd64-v3)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -206,6 +209,7 @@ tasks:
           GOAMD64: v3
         }
   linux-arm64-premium:
+    desc: Build TPClash With Clash Premium(linux/arm64)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -214,6 +218,7 @@ tasks:
           GOARCH: arm64
         }
   linux-armv5-premium:
+    desc: Build TPClash With Clash Premium(linux/armv5)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -223,6 +228,7 @@ tasks:
           GOARM: 5
         }
   linux-armv6-premium:
+    desc: Build TPClash With Clash Premium(linux/armv6)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -232,6 +238,7 @@ tasks:
           GOARM: 6
         }
   linux-armv7-premium:
+    desc: Build TPClash With Clash Premium(linux/armv7)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -241,6 +248,7 @@ tasks:
           GOARM: 7
         }
   linux-mips-hardfloat-premium:
+    desc: Build TPClash With Clash Premium(linux/mips-hardfloat)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -250,6 +258,7 @@ tasks:
           GOMIPS: hardfloat
         }
   linux-mipsle-softfloat-premium:
+    desc: Build TPClash With Clash Premium(linux/mipsle-softfloat)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -259,6 +268,7 @@ tasks:
           GOMIPS: softfloat
         }
   linux-mipsle-hardfloat-premium:
+    desc: Build TPClash With Clash Premium(linux/mipsle-hardfloat)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -268,6 +278,7 @@ tasks:
           GOMIPS: hardfloat
         }
   linux-mips64-premium:
+    desc: Build TPClash With Clash Premium(linux/mips64)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -276,6 +287,7 @@ tasks:
           GOARCH: mips64
         }
   linux-mips64le-premium:
+    desc: Build TPClash With Clash Premium(linux/mips64le)
     cmds:
       - task: build-tpclash-premium
         vars: {
@@ -285,6 +297,7 @@ tasks:
         }
 
   linux-amd64-meta:
+    desc: Build TPClash With Clash Meta(linux/amd64)
     cmds:
       - task: build-tpclash-meta
         vars: {
@@ -294,6 +307,7 @@ tasks:
           GOAMD64: v2
         }
   linux-amd64-v3-meta:
+    desc: Build TPClash With Clash Meta(linux/amd64-v3)
     cmds:
       - task: build-tpclash-meta
         vars: {
@@ -303,6 +317,7 @@ tasks:
           GOAMD64: v3
         }
   linux-arm64-meta:
+    desc: Build TPClash With Clash Meta(linux/arm64)
     cmds:
       - task: build-tpclash-meta
         vars: {
@@ -311,6 +326,7 @@ tasks:
           GOARCH: arm64
         }
   linux-armv5-meta:
+    desc: Build TPClash With Clash Meta(linux/armv5)
     cmds:
       - task: build-tpclash-meta
         vars: {
@@ -320,6 +336,7 @@ tasks:
           GOARM: 5
         }
   linux-armv6-meta:
+    desc: Build TPClash With Clash Meta(linux/armv6)
     cmds:
       - task: build-tpclash-meta
         vars: {
@@ -329,6 +346,7 @@ tasks:
           GOARM: 6
         }
   linux-armv7-meta:
+    desc: Build TPClash With Clash Meta(linux/armv7)
     cmds:
       - task: build-tpclash-meta
         vars: {
@@ -338,6 +356,7 @@ tasks:
           GOARM: 7
         }
   linux-mips-hardfloat-meta:
+    desc: Build TPClash With Clash Meta(linux/mips-hardfloat)
     cmds:
       - task: build-tpclash-meta
         vars: {
@@ -347,6 +366,7 @@ tasks:
           GOMIPS: hardfloat
         }
   linux-mipsle-softfloat-meta:
+    desc: Build TPClash With Clash Meta(linux/mipsle-softfloat)
     cmds:
       - task: build-tpclash-meta
         vars: {
@@ -356,6 +376,7 @@ tasks:
           GOMIPS: softfloat
         }
   linux-mipsle-hardfloat-meta:
+    desc: Build TPClash With Clash Meta(linux/mipsle-hardfloat)
     cmds:
       - task: build-tpclash-meta
         vars: {
@@ -365,6 +386,7 @@ tasks:
           GOMIPS: hardfloat
         }
   linux-mips64-meta:
+    desc: Build TPClash With Clash Meta(linux/mips64)
     cmds:
       - task: build-tpclash-meta
         vars: {
@@ -373,6 +395,7 @@ tasks:
           GOARCH: mips64
         }
   linux-mips64le-meta:
+    desc: Build TPClash With Clash Meta(linux/mips64le)
     cmds:
       - task: build-tpclash-meta
         vars: {
