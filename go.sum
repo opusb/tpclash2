@@ -149,6 +149,10 @@ github.com/mdlayher/netx v0.0.0-20220422152302-c711c2f8512f h1:h2oRsy/PeVMX4G3qQ
 github.com/mdlayher/netx v0.0.0-20220422152302-c711c2f8512f/go.mod h1:fwIXeygydjUR2l8Be1+G0PJSwHI4MpG5muNgH3qJqeQ=
 github.com/mitchellh/mapstructure v1.5.0 h1:jeMsZIYE/09sWLaz43PL7Gy6RuMjD2eJVyuac5Z2hdY=
 github.com/mitchellh/mapstructure v1.5.0/go.mod h1:bFUtVrKA4DC2yAKiSyO/QUcy7e+RRV2QTWOzhPopBRo=
+github.com/mritd/logrus v0.0.0-20221230123654-278e3df1cfc7 h1:bCNbbly/0Lj/j8OwNRmCStk1S/lZG6oJSF6vI1bbA9Q=
+github.com/mritd/logrus v0.0.0-20221230123654-278e3df1cfc7/go.mod h1:cwSjf3kI8ievaIsAFtB7gescBQqZsKdouvz231wathY=
+github.com/mritd/logrus v0.0.0-20221230124220-8f8f573eb651 h1:bCoVbgodC/tUrKMmNZbL19QvH4F8kA+iLGqXhPULFqk=
+github.com/mritd/logrus v0.0.0-20221230124220-8f8f573eb651/go.mod h1:cwSjf3kI8ievaIsAFtB7gescBQqZsKdouvz231wathY=
 github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
 github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/pelletier/go-toml/v2 v2.0.6 h1:nrzqCb7j9cDFj2coyLNLaZuJTLjWjlaz6nvTvIwycIU=

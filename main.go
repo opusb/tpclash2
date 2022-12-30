@@ -14,6 +14,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	_ "github.com/mritd/logrus"
 )
 
 var (
@@ -121,13 +123,6 @@ func main() {
 }
 
 func tpClashInit() {
-	// init logrus
-	logrus.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp:   true,
-		PadLevelText:    true,
-		TimestampFormat: "2006-01-02 15:04:05",
-	})
-
 	// set default hijack dns
 	if conf.HijackDNS == nil {
 		conf.HijackDNS = []string{"0.0.0.0/0"}

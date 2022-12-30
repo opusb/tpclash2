@@ -19,6 +19,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mdlayher/netx v0.0.0-20220422152302-c711c2f8512f // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
+	github.com/mritd/logrus v0.0.0-20221230124220-8f8f573eb651 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
