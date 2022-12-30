@@ -74,21 +74,14 @@ func (m *tproxyMode) addForward() error {
 func (m *tproxyMode) delForward() error {
 	logrus.Debugf("[tproxy] delete forward iptables rules...")
 
-	ok, err := m.ins.ChainExists(tableMangle, chainIP4)
+	err := m.ins.DeleteIfExists(tableMangle, chainPreRouting, "-j", chainIP4)
 	if err != nil {
-		return fmt.Errorf("failed to check chain %s/%s: %s", tableMangle, chainIP4, err)
+		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainPreRouting, chainIP4, err)
 	}
 
-	if ok {
-		err = m.ins.DeleteIfExists(tableMangle, chainPreRouting, "-j", chainIP4)
-		if err != nil {
-			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableMangle, chainPreRouting, chainIP4, err)
-		}
-
-		err = m.ins.ClearAndDeleteChain(tableMangle, chainIP4)
-		if err != nil {
-			return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableMangle, chainIP4, err)
-		}
+	err = m.ins.ClearAndDeleteChain(tableMangle, chainIP4)
+	if err != nil {
+		return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableMangle, chainIP4, err)
 	}
 
 	err = m.ins.DeleteIfExists(tableNat, chainPreRouting, "-p", "icmp", "-d", m.cc.FakeIPRange, "-j", actionDNat, "--to-destination", "127.0.0.1")
@@ -123,19 +116,13 @@ func (m *tproxyMode) addForwardDNS() error {
 func (m *tproxyMode) delForwardDNS() error {
 	logrus.Debugf("[tproxy] delete forward dns iptables rules...")
 
-	ok, err := m.ins.ChainExists(tableNat, chainIP4DNS)
+	err := m.ins.DeleteIfExists(tableNat, chainPreRouting, "-j", chainIP4DNS)
 	if err != nil {
-		return fmt.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNS, err)
+		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
 	}
-	if ok {
-		err = m.ins.DeleteIfExists(tableNat, chainPreRouting, "-j", chainIP4DNS)
-		if err != nil {
-			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
-		}
-		err = m.ins.ClearAndDeleteChain(tableNat, chainIP4DNS)
-		if err != nil {
-			return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
-		}
+	err = m.ins.ClearAndDeleteChain(tableNat, chainIP4DNS)
+	if err != nil {
+		return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
 	}
 
 	return nil
@@ -300,19 +287,13 @@ func (m *tproxyMode) delLocalDNS() error {
 	}
 	logrus.Debugf("[tproxy] delete local dns iptables rules...")
 
-	ok, err := m.ins.ChainExists(tableNat, chainIP4DNSLocal)
+	err := m.ins.DeleteIfExists(tableNat, chainOutput, "-j", chainIP4DNSLocal)
 	if err != nil {
-		return fmt.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNSLocal, err)
+		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainOutput, chainIP4DNSLocal, err)
 	}
-	if ok {
-		err = m.ins.DeleteIfExists(tableNat, chainOutput, "-j", chainIP4DNSLocal)
-		if err != nil {
-			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainOutput, chainIP4DNSLocal, err)
-		}
-		err = m.ins.ClearAndDeleteChain(tableNat, chainIP4DNSLocal)
-		if err != nil {
-			return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
-		}
+	err = m.ins.ClearAndDeleteChain(tableNat, chainIP4DNSLocal)
+	if err != nil {
+		return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
 	}
 
 	return nil
@@ -334,16 +315,10 @@ func (m *tproxyMode) addMisc() error {
 }
 
 func (m *tproxyMode) delMisc() error {
-	ok, err := m.ins.ChainExists(tableFilter, chainDockerUser)
+	// iptables -t filter -D DOCKER-USER -j ACCEPT
+	err := m.ins.DeleteIfExists(tableFilter, chainDockerUser, "-j", actionAccept)
 	if err != nil {
-		return nil
-	}
-	if ok {
-		// iptables -t filter -D DOCKER-USER -j ACCEPT
-		err = m.ins.DeleteIfExists(tableFilter, chainDockerUser, "-j", actionAccept)
-		if err != nil {
-			return fmt.Errorf("failed to delete docker rules: %v", err)
-		}
+		return fmt.Errorf("failed to delete docker rules: %v", err)
 	}
 	return nil
 }

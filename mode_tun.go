@@ -40,19 +40,13 @@ func (m *tunMode) addForwardDNS() error {
 func (m *tunMode) delForwardDNS() error {
 	logrus.Debugf("[tun] delete forward dns iptables rules...")
 
-	ok, err := m.ins.ChainExists(tableNat, chainIP4DNS)
+	err := m.ins.DeleteIfExists(tableNat, chainPreRouting, "-j", chainIP4DNS)
 	if err != nil {
-		return fmt.Errorf("failed to check chain %s/%s: %s", tableNat, chainIP4DNS, err)
+		return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
 	}
-	if ok {
-		err = m.ins.DeleteIfExists(tableNat, chainPreRouting, "-j", chainIP4DNS)
-		if err != nil {
-			return fmt.Errorf("failed to delete rules: %s/%s -> %s, error: %v", tableNat, chainPreRouting, chainIP4DNS, err)
-		}
-		err = m.ins.ClearAndDeleteChain(tableNat, chainIP4DNS)
-		if err != nil {
-			return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
-		}
+	err = m.ins.ClearAndDeleteChain(tableNat, chainIP4DNS)
+	if err != nil {
+		return fmt.Errorf("failed to delete chain: %s/%s, error: %v", tableNat, chainIP4DNS, err)
 	}
 
 	return nil
@@ -144,16 +138,10 @@ func (m *tunMode) addMisc() error {
 	return nil
 }
 func (m *tunMode) delMisc() error {
-	ok, err := m.ins.ChainExists(tableFilter, chainDockerUser)
+	// iptables -t filter -D DOCKER-USER -j ACCEPT
+	err := m.ins.DeleteIfExists(tableFilter, chainDockerUser, "-j", actionAccept)
 	if err != nil {
-		return nil
-	}
-	if ok {
-		// iptables -t filter -D DOCKER-USER -j ACCEPT
-		err = m.ins.DeleteIfExists(tableFilter, chainDockerUser, "-j", actionAccept)
-		if err != nil {
-			return fmt.Errorf("failed to delete docker rules: %v", err)
-		}
+		return fmt.Errorf("failed to delete docker rules: %v", err)
 	}
 	return nil
 }
