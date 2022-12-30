@@ -6,8 +6,10 @@ After=network.target
 Type=simple
 User=root
 Restart=on-failure
+ExecStart=/usr/local/bin/tpclash
 
-ExecStart=/usr/bin/tpclash
+RestartSec=10s
+TimeoutStopSec=30s
 
 [Install]
 WantedBy=multi-user.target
