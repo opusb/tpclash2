@@ -116,7 +116,7 @@ tasks:
     desc: Download Clash Meta
     vars:
       CLASH_META_URL:
-        sh: curl -sSL https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.assets[].browser_download_url | select (. | test("Clash.Meta-{{.PLATFORM}}-v\\d+.*gz"))'
+        sh: curl -sSL https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.assets[].browser_download_url | select (. | test("clash.meta-{{.PLATFORM}}-v\\d+.*gz"))'
     cmds:
       - curl -sSL {{.CLASH_META_URL}} > build/clash-meta-{{.PLATFORM}}.gz
       - gzip -d build/clash-meta-{{.PLATFORM}}.gz
