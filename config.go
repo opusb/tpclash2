@@ -10,8 +10,6 @@ import (
 )
 
 type TPClashConf struct {
-	//ProxyMode string
-
 	ClashHome   string
 	ClashConfig string
 	ClashUI     string
