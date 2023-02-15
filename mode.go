@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/coreos/go-iptables/iptables"
 )
 
@@ -46,20 +43,9 @@ func NewProxyMode(cc *ClashConf, tpcc *TPClashConf) (ProxyMode, error) {
 		return nil, err
 	}
 
-	switch strings.ToLower(conf.ProxyMode) {
-	case "tproxy":
-		return &tproxyMode{
-			ins:  ip4,
-			tpcc: tpcc,
-			cc:   cc,
-		}, nil
-	case "tun":
-		return &tunMode{
-			ins:  ip4,
-			tpcc: tpcc,
-			cc:   cc,
-		}, nil
-	}
-
-	return nil, fmt.Errorf("unsupported proxy mode: %s", conf.ProxyMode)
+	return &tunMode{
+		ins:  ip4,
+		tpcc: tpcc,
+		cc:   cc,
+	}, nil
 }

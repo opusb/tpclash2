@@ -10,14 +10,13 @@ import (
 )
 
 type TPClashConf struct {
-	ProxyMode string
+	//ProxyMode string
 
 	ClashHome   string
 	ClashConfig string
 	ClashUI     string
 	LocalProxy  bool
 
-	TproxyMark     string
 	ClashUser      string
 	DirectGroup    string
 	HijackIP       []net.IP
@@ -33,7 +32,6 @@ type ClashConf struct {
 	EnhancedMode  string
 	DNSHost       string
 	DNSPort       string
-	TProxyPort    string
 	FakeIPRange   string
 	InterfaceName string
 }
@@ -81,27 +79,14 @@ func ParseClashConf() (*ClashConf, error) {
 		return nil, fmt.Errorf("meta kernel must turn off iptables(iptables.enable)")
 	}
 
-	switch conf.ProxyMode {
-	case "tproxy":
-		if tproxyPort < 1 {
-			return nil, fmt.Errorf("tproxy port in clash config is missing(tproxy-port)")
-		}
-		if tunEnabled {
-			return nil, fmt.Errorf("tun must be disabled in tproxy mode(tun.enable)")
-		}
-		if routingMark > 0 {
-			return nil, fmt.Errorf("routing-mark cannot be set in tproxy mode(routing-mark)")
-		}
-	case "tun":
-		if tproxyPort > 0 {
-			return nil, fmt.Errorf("please delete the tproxy port in tun mode(tproxy-port)")
-		}
-		if !tunEnabled {
-			return nil, fmt.Errorf("tun must be enabled in tun mode(tun.enable)")
-		}
-		if routingMark < 1 {
-			return nil, fmt.Errorf("routing-mark must be set in tun mode(routing-mark)")
-		}
+	if tproxyPort > 0 {
+		return nil, fmt.Errorf("please delete the tproxy port in tun mode(tproxy-port)")
+	}
+	if !tunEnabled {
+		return nil, fmt.Errorf("tun must be enabled in tun mode(tun.enable)")
+	}
+	if routingMark < 1 {
+		return nil, fmt.Errorf("routing-mark must be set in tun mode(routing-mark)")
 	}
 
 	return &ClashConf{
@@ -109,7 +94,6 @@ func ParseClashConf() (*ClashConf, error) {
 		EnhancedMode:  enhancedMode,
 		DNSHost:       dnsHost,
 		DNSPort:       dnsPort,
-		TProxyPort:    strconv.Itoa(tproxyPort),
 		FakeIPRange:   fakeIPRange,
 		InterfaceName: interfaceName,
 	}, nil
