@@ -130,4 +130,4 @@ task # go-task 安装成功后会包含此命令
 TPClash 默认释放的文件包含了 [Loyalsoldier/clash-rules](https://github.com/Loyalsoldier/clash-rules) 相关文件, 可在规则中直接使用;
 
 **TPClash 同时也释放了 [Hackl0us/GeoIP2-CN](https://github.com/Hackl0us/GeoIP2-CN) 项目的 Country.mmdb 文件, 该 GeoIP 数据库
-仅包含中国大陆地区 IP, 所以如果使用 `GEOIP, US, PROXY` 等其他国家规则会失败.**
+仅包含中国大陆地区 IP, 所以如果使用 `GEOIP,US,PROXY` 等其他国家规则会失败.**
