@@ -67,7 +67,7 @@ var rootCmd = &cobra.Command{
 			cancel()
 		}
 
-		if err = proxyMode.EnableForward(); err != nil {
+		if err = proxyMode.EnableProxy(); err != nil {
 			logrus.Fatalf("failed to enable proxy: %v", err)
 		}
 
@@ -83,7 +83,7 @@ var rootCmd = &cobra.Command{
 		<-ctx.Done()
 		logrus.Info("[main] 🛑 TPClash 正在停止...")
 
-		if err = proxyMode.DisableForward(); err != nil {
+		if err = proxyMode.DisableProxy(); err != nil {
 			logrus.Error(err)
 		}
 
@@ -104,12 +104,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashHome, "home", "d", "/data/clash", "clash home dir")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashConfig, "config", "c", "/etc/clash.yaml", "clash config path")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashUI, "ui", "u", "yacd", "clash dashboard(official|yacd)")
-	rootCmd.PersistentFlags().BoolVar(&conf.LocalProxy, "local-proxy", false, "enable local proxy")
 	rootCmd.PersistentFlags().BoolVar(&conf.Debug, "debug", false, "enable debug log")
 
 	rootCmd.PersistentFlags().StringVar(&conf.ClashUser, "clash-user", defaultClashUser, "clash runtime user")
-	rootCmd.PersistentFlags().StringVar(&conf.DirectGroup, "direct-group", defaultDirectGroup, "skip proxy group")
-	rootCmd.PersistentFlags().StringSliceVar(&conf.HijackDNS, "hijack-dns", nil, "hijack the target DNS address (default \"0.0.0.0/0\")")
 	rootCmd.PersistentFlags().IPSliceVar(&conf.HijackIP, "hijack-ip", nil, "hijack target IP traffic")
 	rootCmd.PersistentFlags().BoolVar(&conf.DisableExtract, "disable-extract", false, "disable extract files")
 	rootCmd.PersistentFlags().BoolVar(&conf.AutoExit, "test", false, "run in test mode, exit automatically after 5 minutes")
@@ -121,11 +118,6 @@ func main() {
 }
 
 func tpClashInit() {
-	// set default hijack dns
-	if conf.HijackDNS == nil {
-		conf.HijackDNS = []string{"0.0.0.0/0"}
-	}
-
 	// load clash config
 	viper.SetConfigFile(conf.ClashConfig)
 	viper.SetEnvPrefix("TPCLASH")
@@ -154,7 +146,7 @@ func tpClashInit() {
 	}
 
 	// copy static files
-	ensureUserAndGroup()
+	ensureUser()
 	ensureClashFiles()
 	ensureSysctl()
 }
