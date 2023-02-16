@@ -23,7 +23,8 @@ type TPClashConf struct {
 }
 
 type ClashConf struct {
-	Debug bool
+	Debug         bool
+	InterfaceName string
 }
 
 // ParseClashConf Parses clash configuration and performs necessary checks
@@ -82,6 +83,7 @@ func ParseClashConf() (*ClashConf, error) {
 	}
 
 	return &ClashConf{
-		Debug: strings.ToLower(debug) == "debug",
+		Debug:         strings.ToLower(debug) == "debug",
+		InterfaceName: interfaceName,
 	}, nil
 }
