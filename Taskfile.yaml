@@ -71,9 +71,11 @@ tasks:
   download-meta-dashboard:
     desc: Download Clash Meta Dashboard
     cmds:
-      - curl -sSL https://github.com/MetaCubeX/Razord-meta/tarball/master > build/meta.tgz
+      - curl -sSL https://github.com/MetaCubeX/Yacd-meta/tarball/master > build/yacd.tgz
+      - curl -sSL https://github.com/MetaCubeX/Razord-meta/tarball/master > build/official.tgz
     status:
-      - test -f build/meta.tgz
+      - test -f build/yacd.tgz
+      - test -f build/official.tgz
 
   build-premium-dashboard:
     desc: Build Clash Premium Dashboard
@@ -93,12 +95,17 @@ tasks:
   build-meta-dashboard:
     desc: Build Clash Meta Dashboard
     cmds:
-      - tar -zxf build/meta.tgz --strip-components 1 -C build/meta
-      - defer: rm -rf build/meta
-      - (cd build/meta && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
-      - cp -r build/meta/dist static/meta
+      - tar -zxf build/yacd.tgz --strip-components 1 -C build/yacd
+      - defer: rm -rf build/yacd
+      - tar -zxf build/official.tgz --strip-components 1 -C build/official
+      - defer: rm -rf build/official
+      - (cd build/yacd && yarn install > /dev/null 2>&1 && yarn build > /dev/null 2>&1)
+      - (cd build/official && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
+      - cp -r build/yacd/public static/yacd
+      - cp -r build/official/dist static/official
     status:
-      - test -d static/meta
+      - test -d static/yacd
+      - test -d static/official
 
   download-clash-premium:
     desc: Download Clash Premium

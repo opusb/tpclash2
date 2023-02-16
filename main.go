@@ -103,7 +103,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashHome, "home", "d", "/data/clash", "clash home dir")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashConfig, "config", "c", "/etc/clash.yaml", "clash config path")
-	rootCmd.PersistentFlags().StringVarP(&conf.ClashUI, "ui", "u", "yacd", "clash dashboard(official|yacd|meta)")
+	rootCmd.PersistentFlags().StringVarP(&conf.ClashUI, "ui", "u", "yacd", "clash dashboard(official|yacd)")
 	rootCmd.PersistentFlags().BoolVar(&conf.LocalProxy, "local-proxy", false, "enable local proxy")
 	rootCmd.PersistentFlags().BoolVar(&conf.Debug, "debug", false, "enable debug log")
 
