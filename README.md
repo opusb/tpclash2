@@ -100,6 +100,19 @@ TPClash 启动成功后, 将其他主机的网关指向当前 TPClash 服务器 
 当该选项被设置后, TPClash 将会对目标 IP 发起 ARP 攻击, 从而强制接管目标地址的流量. 需要注意的是, 当目标 IP 被设置为 `0.0.0.0`
 时, TPClash 将会劫持所有内网流量, 这可能会因为配置错误导致整体断网, 所以请谨慎操作.
 
+### 2.6、在Docker容器中使用
+在Docker容器中使用需要创建`/dev/net/tun`设备，允许`iptables`的修改，并设置`net.ipv4.ip_forward`与`net.ipv4.conf.all.route_localnet`内核参数。
+因此在创建容器时需要加入参数`--sysctl net.ipv4.ip_forward=1 --sysctl net.ipv4.conf.all.route_localnet=1 --cap-add MKNOD --cap-add NET_ADMI`。例如：
+```sh
+docker run --sysctl net.ipv4.ip_forward=1 --sysctl net.ipv4.conf.all.route_localnet=1 --cap-add MKNOD --cap-add NET_ADMI
+N --cap-add NET_RAW ubuntu:20.04
+```
+并在容器创建后创建`/dev/net/tun'设备。例如：
+```
+mkdir /dev/net;mknod /dev/net/tun c 10 200;chmod 777 /dev/net/tun
+```
+之后便可正常在docker容器中使用tpclash。
+
 ## 三、TPClash 做了什么
 
 **TPClash 在启动后会进行如下动作:**
