@@ -1,20 +1,12 @@
 version: '3'
 
 tasks:
-  clean:
-    desc: Clean Build Dir
-    cmds:
-      - rm -rf build static
-    status:
-      - test ! -d build
-      - test ! -d static
-
   mkdir:
     desc: Create Build Dir
     cmds:
-      - mkdir -p build/dist static/ruleset
+      - mkdir -p build static/ruleset
     status:
-      - test -d build/dist
+      - test -d build
       - test -d static/ruleset
   download-ruleset:
     desc: Download Loyalsoldier RuleSet
@@ -110,19 +102,19 @@ tasks:
     status:
       - test -f build/clash-meta-{{.PLATFORM}}
 
-  copy-clash-premium:
+  move-clash-premium:
     desc: Copy Clash Premium To Embed FS
     cmds:
       - task: download-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - cp build/clash-{{.PLATFORM}} static/xclash
+      - mv build/clash-{{.PLATFORM}} static/xclash
 
-  copy-clash-meta:
+  move-clash-meta:
     desc: Copy Clash Meta To Embed FS
     cmds:
       - task: download-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - cp build/clash-meta-{{.PLATFORM}} static/xclash
+      - mv build/clash-meta-{{.PLATFORM}} static/xclash
 
   build-tpclash-premium:
     desc: Build TPClash With Clash Premium
@@ -137,11 +129,11 @@ tasks:
       - task: build-premium-dashboard
       - task: download-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - task: copy-clash-premium
+      - task: move-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
-        go build -trimpath -o build/dist/tpclash-premium-{{.PLATFORM}} -ldflags \
+        go build -trimpath -o build/tpclash-premium-{{.PLATFORM}} -ldflags \
         "-w -s -X main.commit={{.TPCLASH_COMMIT}}"
 
   build-tpclash-meta:
@@ -157,11 +149,11 @@ tasks:
       - task: build-meta-dashboard
       - task: download-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - task: copy-clash-meta
+      - task: move-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
-        go build -trimpath -o build/dist/tpclash-meta-{{.PLATFORM}} -ldflags \
+        go build -trimpath -o build/tpclash-meta-{{.PLATFORM}} -ldflags \
         "-w -s -X main.commit={{.TPCLASH_COMMIT}}"
 
   linux-386-premium:
@@ -390,7 +382,7 @@ tasks:
 
   default:
     cmds:
-      - task: clean
+      - rm -rf build static
       - task: linux-386-premium
       - task: linux-amd64-premium
       - task: linux-amd64-v3-premium
@@ -399,3 +391,4 @@ tasks:
       - task: linux-amd64-meta
       - task: linux-amd64-v3-meta
       - task: linux-arm64-meta
+      - rm -rf static
