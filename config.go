@@ -23,12 +23,7 @@ type TPClashConf struct {
 }
 
 type ClashConf struct {
-	Debug         bool
-	EnhancedMode  string
-	DNSHost       string
-	DNSPort       string
-	FakeIPRange   string
-	InterfaceName string
+	Debug bool
 }
 
 // ParseClashConf Parses clash configuration and performs necessary checks
@@ -61,6 +56,11 @@ func ParseClashConf() (*ClashConf, error) {
 		return nil, fmt.Errorf("dns port in clash config is missing(dns.listen)")
 	}
 
+	dhost := net.ParseIP(dnsHost)
+	if dhost == nil {
+		return nil, fmt.Errorf("dns listening address parse failed(dns.listen): is not a valid IP address")
+	}
+
 	if interfaceName == "" {
 		return nil, fmt.Errorf("failed to parse clash interface name(interface-name): interface-name must be set")
 	}
@@ -82,11 +82,6 @@ func ParseClashConf() (*ClashConf, error) {
 	}
 
 	return &ClashConf{
-		Debug:         strings.ToLower(debug) == "debug",
-		EnhancedMode:  enhancedMode,
-		DNSHost:       dnsHost,
-		DNSPort:       dnsPort,
-		FakeIPRange:   fakeIPRange,
-		InterfaceName: interfaceName,
+		Debug: strings.ToLower(debug) == "debug",
 	}, nil
 }
