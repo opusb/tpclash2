@@ -5,26 +5,8 @@ import (
 )
 
 type ProxyMode interface {
-	addForward() error
-	delForward() error
-
-	addForwardDNS() error
-	delForwardDNS() error
-
-	addLocal() error
-	delLocal() error
-
-	addLocalDNS() error
-	delLocalDNS() error
-
-	addMisc() error
-	delMisc() error
-
-	apply() error
-	clean() error
-
-	EnableForward() error
-	DisableForward() error
+	EnableProxy() error
+	DisableProxy() error
 }
 
 func process(fns ...func() error) error {

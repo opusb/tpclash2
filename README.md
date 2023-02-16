@@ -4,12 +4,10 @@
 
 ## 一、TPClash 是什么
 
-TPClash 可以自动安装 Clash Premium, 并自动配置基于 TProxy/Tun 的透明代理; 透明代理同时支持 TCP 和 UDP 协议, 包括对 DNS 的自动配置和 ICMP 的劫持等.
+TPClash 可以自动安装 Clash Premium, 并自动配置基于 Tun 的透明代理.
 
 **TPClash 的透明代理规则、日志配置、Dashboard(UI) 配置等全部从标准的 Clash Premium 配置文件内读取, 并完成自适应; TPClash 暂时不会创建自己的自定义
 配置文件(减轻使用负担).**
-
-**同时 TPClash 在终止后会清理自己创建的 iptables 规则和路由表(防止把机器搞没); 这种清理不会简单的执行 `iptables -F/-X`, 而是进行 "定点清除", 以防止误删用户规则.**
 
 ## 二、TPClash 使用
 
@@ -22,49 +20,25 @@ TPClash 只有一个二进制文件, 直接从 Release 页面下载二进制文�
 ./tpclash -c /etc/clash.yaml
 ```
 
-**根据使用模式不同, TPClash 对 Clash 配置文件有不同的要求; 目前默认为 TUN 模式(对宿主机的 docker 等兼容性比较好), 可以通过 `-m` 参数自行切换.**
+**由于 TPClash 只是一个辅助工具, 实际代理处理还是由 Clash 完成, 为了避免错误配置导致代理不工作, TPClash 对 Clash 配置文件进行了必要性的配置检测.**
 
-### 2.1、TProxy 模式配置
-
-```yaml
-# 需要开启 tproxy 端口
-tproxy-port: 7893
-
-# 请指定自己实际的借口名称
-interface-name: ens160
-
-# 开启 DNS 配置, 且使用 fake-ip 模式
-# DNS 监听地址至少保证 127.0.0.1 可达
-dns:
-  enable: true
-  listen: 0.0.0.0:1053
-  enhanced-mode: fake-ip
-  default-nameserver:
-    - 114.114.114.114
-  nameserver:
-    - 114.114.114.114
-```
-
-### 2.2、TUN 模式配置
+### 2.1、TUN 模式配置
 
 ```yaml
-# 请指定自己实际的借口名称
+# 请指定自己实际的接口名称(ip a 获取)
 interface-name: ens160
 
 # 需要开启 TUN 配置
 tun:
   enable: true
-  stack: system # or gvisor
+  stack: system
   dns-hijack:
     - any:53
   #   - 8.8.8.8:53
   #   - tcp://8.8.8.8:53
-
-# 需要指定全局 routing-mark(值可更改)
-routing-mark: 666
+  auto-route: true
 
 # 开启 DNS 配置, 且使用 fake-ip 模式
-# DNS 监听地址至少保证 127.0.0.1 可达
 dns:
   enable: true
   listen: 0.0.0.0:1053
@@ -75,7 +49,7 @@ dns:
     - 114.114.114.114
 ```
 
-### 2.3、启动 TPClash
+### 2.2、启动 TPClash
 
 **初次使用的用户推荐命令行执行并增加 `--test` 参数, 该参数保证 TPClash 在启动 5 分钟后自动退出, 如果出现断网等情况也能自行恢复. TPClash 支持的所有命令可以通过 `--help` 查看:**
 
@@ -87,34 +61,32 @@ Usage:
   tpclash [flags]
 
 Flags:
-      --clash-user string     clash runtime user (default "tpclash")
-  -c, --config string         clash config path (default "/etc/clash.yaml")
-      --debug                 enable debug log
-      --direct-group string   skip tproxy group (default "tpdirect")
-      --disable-extract       disable extract files
-  -h, --help                  help for tpclash
-      --hijack-dns strings    hijack the target DNS address (default "0.0.0.0/0")
-      --hijack-ip ipSlice     hijack target IP traffic (default [])
-  -d, --home string           clash home dir (default "/data/clash")
-      --local-proxy           enable local proxy (default true)
-  -m, --proxy-mode string     clash proxy mode(tproxy|tun) (default "tun")
-      --test                  run in test mode, exit automatically after 5 minutes
-      --tproxy-mark string    tproxy mark (default "666")
-  -u, --ui string             clash dashboard(official|yacd|meta) (default "yacd")
-  -v, --version               version for tpclash
+      --clash-user string   clash runtime user (default "tpclash")
+  -c, --config string       clash config path (default "/etc/clash.yaml")
+      --debug               enable debug log
+      --disable-extract     disable extract files
+  -h, --help                help for tpclash
+      --hijack-ip ipSlice   hijack target IP traffic (default [])
+  -d, --home string         clash home dir (default "/data/clash")
+      --test                run in test mode, exit automatically after 5 minutes
+  -u, --ui string           clash dashboard(official|yacd) (default "yacd")
+  -v, --version             version for tpclash
 ```
 
-### 2.4、Meta 用户
+### 2.3、Meta 用户
 
 从 `v0.0.16` 版本开始支持 Clash Meta 分支版本, Meta 用户**需要在配置文件中关闭 iptables 配置**:
 
 ```yaml
 iptables:
-  enable: false # default is false
-  inbound-interface: eth0 # detect the inbound interface, default is 'lo'
+  enable: false
 ```
 
-此外, Meta 用户如果期望使用 Meta 专用的 Dashboard 可以通过 `--ui meta` 选项指定.
+### 2.4、设置流量转发
+
+TPClash 启动成功后, 将其他主机的网关指向当前 TPClash 服务器 IP 即可实现透明代理;
+对于其他主机请使用默认路由器 IP 或者类似 114 等公共 DNS 作为主机 DNS.
+**请不要将其他主机的 DNS 也设置为 TPClash 服务器 IP, 因为当前 Clash 可能并未监听 53 端口.**
 
 ### 2.5、自动流量接管
 
@@ -134,8 +106,8 @@ iptables:
 
 - 1、创建 `/data/clash` 目录, 并将其作为 Clash 的 `Home Dir`
 - 2、将 Clash Premium 二进制文件、Dashboard(官方+yacd)、必要的 ruleset、Country.mmdb 释放到 `/data/clash` 目录
-- 3、创建 `tpclash` 普通用户用于启动 clash, 该用户用于配合 iptables 进行流量过滤
-- 4、添加透明代理的路由表和 iptables 配置
+- 3、创建 `tpclash` 普通用户用于启动 clash
+- 4、选择性添加透明代理的路由表和 iptables 配置
 - 5、启动官方的 Clash Premium, 并设置必要参数, 比如 `-ext-ui`、`-d` 等
 
 ## 四、如何编译 TPClash
@@ -148,7 +120,7 @@ iptables:
 - tar
 - gzip
 - nodejs(用于编译 Dashboard)
-- pnpm、yarn(Dashboard 编译所需依赖工具, 可通过 `npm i -g xxx` 安装)
+- pnpm(Dashboard 编译所需依赖工具, 可通过 `npm i -g xxx` 安装)
 - golang 1.17+
 - [go-task](https://github.com/go-task/task)(类似 Makefile 的替代工具)
 
@@ -165,4 +137,4 @@ task # go-task 安装成功后会包含此命令
 TPClash 默认释放的文件包含了 [Loyalsoldier/clash-rules](https://github.com/Loyalsoldier/clash-rules) 相关文件, 可在规则中直接使用;
 
 **TPClash 同时也释放了 [Hackl0us/GeoIP2-CN](https://github.com/Hackl0us/GeoIP2-CN) 项目的 Country.mmdb 文件, 该 GeoIP 数据库
-仅包含中国大陆地区 IP, 所以如果使用 `GEOIP, US, PROXY` 等其他国家规则会失败.**
+仅包含中国大陆地区 IP, 所以如果使用 `GEOIP,US,PROXY` 等其他国家规则会失败.**

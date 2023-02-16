@@ -27,9 +27,5 @@ const (
 	actionDNat     = "DNAT"
 	actionMark     = "MARK"
 
-	systemdResolveGroup = "systemd-resolve"
-
-	defaultTproxyMark  = "666"
-	defaultClashUser   = "tpclash"
-	defaultDirectGroup = "tpdirect"
+	defaultClashUser = "tpclash"
 )

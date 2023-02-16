@@ -1,23 +1,12 @@
 version: '3'
 
 tasks:
-  clean:
-    desc: Clean Build Dir
-    cmds:
-      - rm -rf build static
-    status:
-      - test ! -d build
-      - test ! -d static
-
   mkdir:
     desc: Create Build Dir
     cmds:
-      - mkdir -p build/{yacd,official,meta,dist} static/ruleset
+      - mkdir -p build static/ruleset
     status:
-      - test -d build/yacd
-      - test -d build/official
-      - test -d build/meta
-      - test -d build/dist
+      - test -d build
       - test -d static/ruleset
   download-ruleset:
     desc: Download Loyalsoldier RuleSet
@@ -59,30 +48,14 @@ tasks:
     status:
       - test -f static/Country.mmdb
 
-  download-premium-dashboard:
-    desc: Download Clash Premium Dashboard
-    cmds:
-      - curl -sSL https://github.com/STASH-NETWORKS-LIMITED/yacd/tarball/master > build/yacd.tgz
-      - curl -sSL https://github.com/Dreamacro/clash-dashboard/tarball/master > build/official.tgz
-    status:
-      - test -f build/yacd.tgz
-      - test -f build/official.tgz
-
-  download-meta-dashboard:
-    desc: Download Clash Meta Dashboard
-    cmds:
-      - curl -sSL https://github.com/MetaCubeX/Razord-meta/tarball/master > build/meta.tgz
-    status:
-      - test -f build/meta.tgz
-
   build-premium-dashboard:
     desc: Build Clash Premium Dashboard
     cmds:
-      - tar -zxf build/yacd.tgz --strip-components 1 -C build/yacd
+      - git clone https://github.com/haishanh/yacd.git build/yacd
       - defer: rm -rf build/yacd
-      - tar -zxf build/official.tgz --strip-components 1 -C build/official
+      - git clone https://github.com/Dreamacro/clash-dashboard.git build/official
       - defer: rm -rf build/official
-      - (cd build/yacd && yarn install > /dev/null 2>&1 && yarn build > /dev/null 2>&1)
+      - (cd build/yacd && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
       - (cd build/official && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
       - cp -r build/yacd/public static/yacd
       - cp -r build/official/dist static/official
@@ -93,12 +66,17 @@ tasks:
   build-meta-dashboard:
     desc: Build Clash Meta Dashboard
     cmds:
-      - tar -zxf build/meta.tgz --strip-components 1 -C build/meta
-      - defer: rm -rf build/meta
-      - (cd build/meta && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
-      - cp -r build/meta/dist static/meta
+      - git clone https://github.com/MetaCubeX/Yacd-meta.git build/yacd
+      - defer: rm -rf build/yacd
+      - git clone https://github.com/MetaCubeX/Razord-meta.git build/official
+      - defer: rm -rf build/official
+      - (cd build/yacd && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
+      - (cd build/official && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
+      - cp -r build/yacd/public static/yacd
+      - cp -r build/official/dist static/official
     status:
-      - test -d static/meta
+      - test -d static/yacd
+      - test -d static/official
 
   download-clash-premium:
     desc: Download Clash Premium
@@ -124,19 +102,19 @@ tasks:
     status:
       - test -f build/clash-meta-{{.PLATFORM}}
 
-  copy-clash-premium:
+  move-clash-premium:
     desc: Copy Clash Premium To Embed FS
     cmds:
       - task: download-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - cp build/clash-{{.PLATFORM}} static/xclash
+      - mv build/clash-{{.PLATFORM}} static/xclash
 
-  copy-clash-meta:
+  move-clash-meta:
     desc: Copy Clash Meta To Embed FS
     cmds:
       - task: download-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - cp build/clash-meta-{{.PLATFORM}} static/xclash
+      - mv build/clash-meta-{{.PLATFORM}} static/xclash
 
   build-tpclash-premium:
     desc: Build TPClash With Clash Premium
@@ -148,15 +126,14 @@ tasks:
       - task: mkdir
       - task: download-ruleset
       - task: download-mmdb
-      - task: download-premium-dashboard
       - task: build-premium-dashboard
       - task: download-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - task: copy-clash-premium
+      - task: move-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
-        go build -trimpath -o build/dist/tpclash-premium-{{.PLATFORM}} -ldflags \
+        go build -trimpath -o build/tpclash-premium-{{.PLATFORM}} -ldflags \
         "-w -s -X main.commit={{.TPCLASH_COMMIT}}"
 
   build-tpclash-meta:
@@ -169,15 +146,14 @@ tasks:
       - task: mkdir
       - task: download-ruleset
       - task: download-mmdb
-      - task: download-meta-dashboard
       - task: build-meta-dashboard
       - task: download-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - task: copy-clash-meta
+      - task: move-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
-        go build -trimpath -o build/dist/tpclash-meta-{{.PLATFORM}} -ldflags \
+        go build -trimpath -o build/tpclash-meta-{{.PLATFORM}} -ldflags \
         "-w -s -X main.commit={{.TPCLASH_COMMIT}}"
 
   linux-386-premium:
@@ -406,11 +382,13 @@ tasks:
 
   default:
     cmds:
-      - task: clean
+      - rm -rf build static
       - task: linux-386-premium
       - task: linux-amd64-premium
       - task: linux-amd64-v3-premium
       - task: linux-arm64-premium
+      - rm -rf static/yacd static/official
       - task: linux-amd64-meta
       - task: linux-amd64-v3-meta
       - task: linux-arm64-meta
+      - rm -rf static
