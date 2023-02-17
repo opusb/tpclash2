@@ -39,7 +39,7 @@ var rootCmd = &cobra.Command{
 		logrus.Info("[main] starting tpclash...")
 
 		uid, gid := getUserIDs(conf.ClashUser)
-		cmd := exec.Command(filepath.Join(conf.ClashHome, "xclash"), "-f", conf.ClashConfig, "-d", conf.ClashHome, "-ext-ui", filepath.Join(conf.ClashHome, conf.ClashUI))
+		cmd := exec.Command(filepath.Join(conf.ClashHome, clashBiName), "-f", conf.ClashConfig, "-d", conf.ClashHome, "-ext-ui", filepath.Join(conf.ClashHome, conf.ClashUI))
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -135,7 +135,7 @@ func tpClashInit() {
 			logrus.Fatalf("failed to download remote config: %v", err)
 		}
 
-		conf.ClashConfig = filepath.Join(conf.ClashHome, "xconfig.yaml")
+		conf.ClashConfig = filepath.Join(conf.ClashHome, clashRemoteConfig)
 		cf, err := os.OpenFile(conf.ClashConfig, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
 		if err != nil {
 			logrus.Fatalf("failed to create local config file: %v", err)

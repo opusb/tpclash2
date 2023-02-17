@@ -1,12 +1,9 @@
 package main
 
 import (
-	"compress/gzip"
 	"embed"
-	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -101,31 +98,6 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) erro
 				return err
 			}
 		}
-	}
-
-	return nil
-}
-
-func downloadClash(u, target string) error {
-	resp, err := http.Get(u)
-	if err != nil {
-		return fmt.Errorf("[static] failed to download clash: %s", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	r, err := gzip.NewReader(resp.Body)
-	if err != nil {
-		return fmt.Errorf("[static] failed to create gzip reader: %s", err)
-	}
-
-	f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0755)
-	if err != nil {
-		return fmt.Errorf("[static] failed to create xclash: %s", err)
-	}
-	defer func() { _ = f.Close() }()
-	_, err = io.Copy(f, r)
-	if err != nil {
-		return fmt.Errorf("[static] failed to create xclash: %s", err)
 	}
 
 	return nil

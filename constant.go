@@ -26,6 +26,10 @@ const (
 	actionRedirect = "REDIRECT"
 	actionDNat     = "DNAT"
 	actionMark     = "MARK"
+)
 
-	defaultClashUser = "tpclash"
+const (
+	clashBiName       = "xclash"
+	clashRemoteConfig = "xclash.yaml"
+	defaultClashUser  = "tpclash"
 )
