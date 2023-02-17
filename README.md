@@ -14,7 +14,10 @@ TPClash 可以自动安装 Clash Premium, 并自动配置基于 Tun 的透明代
 TPClash 只有一个二进制文件, 直接从 Release 页面下载二进制文件运行即可. TPClash 二进制内嵌入了目标平台的 Clash 二进制文件以及其他资源文件(All in one), 
 启动后会自动释放, 所以无需再下载 Clash. 
 
-**注意: TPClash 默认会读取 位于 `/etc/clash.yaml` 的 clash 配置文件, 如果 clash 配置文件在其他位置请自行修改.**
+**注意: TPClash 默认会读取位于 `/etc/clash.yaml` 的 clash 配置文件, 如果 clash 配置文件在其他位置请自行修改.**
+
+> 从 v0.0.19 版本开始支持远程配置下载, 如果 `-c` 指定为 http 地址, 则 clash 在启动后将会自动下载远程配置到 "clash home" 中(`xconfig.yaml`),
+> 然后用该配置启动; 下载行为每次启动都会执行, 所以可以利用此功能和 [subconverter](https://github.com/tindy2013/subconverter) 实现自定订阅转换和定时刷新.
 
 ```sh
 ./tpclash -c /etc/clash.yaml
@@ -62,7 +65,7 @@ Usage:
 
 Flags:
       --clash-user string   clash runtime user (default "tpclash")
-  -c, --config string       clash config path (default "/etc/clash.yaml")
+  -c, --config string       clash config local path or remote url (default "/etc/clash.yaml")
       --debug               enable debug log
       --disable-extract     disable extract files
   -h, --help                help for tpclash
