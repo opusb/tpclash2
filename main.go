@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -118,6 +120,34 @@ func main() {
 }
 
 func tpClashInit() {
+	// copy static files
+	ensureUser()
+	ensureClashFiles()
+	ensureSysctl()
+
+	// download remote config
+	if strings.HasPrefix(conf.ClashConfig, "http://") ||
+		strings.HasPrefix(conf.ClashConfig, "https://") {
+		logrus.Info("[main] use remote config...")
+
+		resp, err := http.Get(conf.ClashConfig)
+		if err != nil {
+			logrus.Fatalf("failed to download remote config: %v", err)
+		}
+
+		conf.ClashConfig = filepath.Join(conf.ClashHome, "xconfig.yaml")
+		cf, err := os.OpenFile(conf.ClashConfig, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+		if err != nil {
+			logrus.Fatalf("failed to create local config file: %v", err)
+		}
+		defer func() { _ = cf.Close() }()
+
+		_, err = io.Copy(cf, resp.Body)
+		if err != nil {
+			logrus.Fatalf("failed to save remote config: %v", err)
+		}
+	}
+
 	// load clash config
 	viper.SetConfigFile(conf.ClashConfig)
 	viper.SetEnvPrefix("TPCLASH")
@@ -144,9 +174,4 @@ func tpClashInit() {
 	} else {
 		fastlog.DefaultIOWriter = io.Discard
 	}
-
-	// copy static files
-	ensureUser()
-	ensureClashFiles()
-	ensureSysctl()
 }
