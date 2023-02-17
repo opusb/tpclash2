@@ -139,7 +139,7 @@ mkdir /dev/net;mknod /dev/net/tun c 10 200;chmod 777 /dev/net/tun
 - gzip
 - nodejs(用于编译 Dashboard)
 - pnpm(Dashboard 编译所需依赖工具, 可通过 `npm i -g xxx` 安装)
-- golang 1.17+
+- golang 1.19+
 - [go-task](https://github.com/go-task/task)(类似 Makefile 的替代工具)
 
 TPClash 项目内的 `Taskfile.yaml` 内已经写好了自动编译脚本, 只需要执行 `task` 命令即可:
