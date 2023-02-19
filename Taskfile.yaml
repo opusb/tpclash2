@@ -1,5 +1,17 @@
 version: '3'
 
+vars:
+  VERSION:
+    sh: git describe --tags --always
+  COMMIT_SHA:
+    sh: git rev-parse HEAD
+  BUILD_DATE:
+    sh: date '+%F %T'
+  PREMIUM_VERSION:
+    sh: curl -sSL https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.name'
+  META_VERSION:
+    sh: curl -sSL https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.name'
+
 tasks:
   mkdir:
     desc: Create Build Dir
@@ -119,9 +131,6 @@ tasks:
   build-tpclash-premium:
     desc: Build TPClash With Clash Premium
     label: build-premium-{{.PLATFORM}}
-    vars:
-      TPCLASH_COMMIT:
-        sh: git rev-parse HEAD
     cmds:
       - task: mkdir
       - task: download-ruleset
@@ -134,14 +143,11 @@ tasks:
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
         go build -trimpath -o build/tpclash-premium-{{.PLATFORM}} -ldflags \
-        "-w -s -X main.commit={{.TPCLASH_COMMIT}}"
+        "-w -s -X 'main.build={{.BUILD_DATE}}' -X 'main.commit={{.COMMIT_SHA}}' -X 'main.version={{.VERSION}}' -X 'main.clash={{.PREMIUM_VERSION}}'"
 
   build-tpclash-meta:
     desc: Build TPClash With Clash Meta
     label: build-meta-{{.PLATFORM}}
-    vars:
-      TPCLASH_COMMIT:
-        sh: git rev-parse HEAD
     cmds:
       - task: mkdir
       - task: download-ruleset
@@ -154,7 +160,7 @@ tasks:
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
         go build -trimpath -o build/tpclash-meta-{{.PLATFORM}} -ldflags \
-        "-w -s -X main.commit={{.TPCLASH_COMMIT}}"
+        "-w -s -X 'main.build={{.BUILD_DATE}}' -X 'main.commit={{.COMMIT_SHA}}' -X 'main.version={{.VERSION}}' -X 'main.clash=Meta {{.META_VERSION}}'"
 
   linux-386-premium:
     desc: Build TPClash With Clash Premium(linux/386)

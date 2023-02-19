@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -27,13 +28,20 @@ var (
 	arpHijacker *ARPHijacker
 )
 
+var printVer bool
+var build string
 var commit string
+var version string
+var clash string
 
 var rootCmd = &cobra.Command{
-	Use:     "tpclash",
-	Short:   "Transparent proxy tool for Clash",
-	Version: commit,
+	Use:   "tpclash",
+	Short: "Transparent proxy tool for Clash",
 	Run: func(_ *cobra.Command, _ []string) {
+		if printVer {
+			return
+		}
+
 		var err error
 
 		logrus.Info("[main] starting tpclash...")
@@ -113,6 +121,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&conf.DisableExtract, "disable-extract", false, "disable extract files")
 	rootCmd.PersistentFlags().BoolVar(&conf.AutoExit, "test", false, "run in test mode, exit automatically after 5 minutes")
 
+	rootCmd.PersistentFlags().BoolVarP(&printVer, "version", "v", false, "version for tpclash")
+
 }
 
 func main() {
@@ -120,6 +130,11 @@ func main() {
 }
 
 func tpClashInit() {
+	if printVer {
+		showVersion()
+		return
+	}
+
 	// copy static files
 	ensureUser()
 	ensureClashFiles()
@@ -174,4 +189,8 @@ func tpClashInit() {
 	} else {
 		fastlog.DefaultIOWriter = io.Discard
 	}
+}
+
+func showVersion() {
+	fmt.Printf("%s\nBuild: %s\nVersion: %s\nClash Core: %s\nCommit: %s\n", logo, build, version, clash, commit)
 }
