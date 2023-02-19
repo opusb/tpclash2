@@ -192,5 +192,5 @@ func tpClashInit() {
 }
 
 func showVersion() {
-	fmt.Printf("%s\nBuild: %s\nVersion: %s\nClash Core: %s\nCommit: %s\n", logo, build, version, clash, commit)
+	fmt.Printf("%s\nVersion: %s\nBuild: %s\nClash Core: %s\nCommit: %s\n", logo, version, build, clash, commit)
 }
