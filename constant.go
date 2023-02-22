@@ -31,7 +31,6 @@ const (
 const (
 	clashBiName       = "xclash"
 	clashRemoteConfig = "xclash.yaml"
-	defaultClashUser  = "tpclash"
 )
 
 const logo = `

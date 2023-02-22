@@ -14,7 +14,6 @@ type TPClashConf struct {
 	ClashConfig string
 	ClashUI     string
 
-	ClashUser      string
 	HijackIP       []net.IP
 	DisableExtract bool
 	AutoExit       bool

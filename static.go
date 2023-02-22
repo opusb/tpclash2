@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -46,14 +47,9 @@ func copyFiles() {
 		logrus.Fatal(err)
 	}
 
-	err = chmod(filepath.Join(conf.ClashHome, "xclash"))
+	bs, err := exec.Command("chmod", "+x", filepath.Join(conf.ClashHome, "xclash")).CombinedOutput()
 	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	err = chownR(conf.ClashHome)
-	if err != nil {
-		logrus.Fatal(err)
+		logrus.Fatalf("[static] failed to change file permission: %s, %v", bs, err)
 	}
 }
 
