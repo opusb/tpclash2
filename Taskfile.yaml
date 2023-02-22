@@ -392,7 +392,7 @@ tasks:
 
   default:
     cmds:
-      - rm -rf build static
+      - task: clean
       - task: linux-386-premium
       - task: linux-amd64-premium
       - task: linux-amd64-v3-premium
