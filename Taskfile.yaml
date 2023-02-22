@@ -13,6 +13,10 @@ vars:
     sh: curl -sSL https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.name'
 
 tasks:
+  clean:
+    desc: Clean Up Build Cache Files
+    cmds:
+      - rm -rf build static
   mkdir:
     desc: Create Build Dir
     cmds:
