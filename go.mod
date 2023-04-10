@@ -8,7 +8,7 @@ require (
 	github.com/lorenzosaino/go-sysctl v0.3.1
 	github.com/mritd/logrus v0.0.0-20221230124220-8f8f573eb651
 	github.com/sirupsen/logrus v1.9.0
-	github.com/spf13/cobra v1.6.1
+	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 )
 
@@ -16,7 +16,7 @@ require (
 	github.com/BurntSushi/toml v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mdlayher/netx v0.0.0-20200512211805-669a06fde734 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
