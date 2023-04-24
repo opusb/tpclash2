@@ -37,6 +37,7 @@ func ParseClashConf() (*ClashConf, error) {
 	tunEnabled := viper.GetBool("tun.enable")
 	tunAutoRoute := viper.GetBool("tun.auto-route")
 	tunEBPF := viper.GetStringSlice("ebpf.redirect-to-tun")
+	routingMark := viper.GetInt("routing-mark")
 	metaIPtables := viper.GetBool("iptables.enable")
 
 	// common check
@@ -79,7 +80,11 @@ func ParseClashConf() (*ClashConf, error) {
 	}
 
 	if tunAutoRoute && tunEBPF != nil {
-		return nil, fmt.Errorf("cannot enable tun-auto-route and ebpf at the same time(tun.auto-route/ebpf.redirect-to-tun)")
+		return nil, fmt.Errorf("cannot enable auto-route and ebpf at the same time(tun.auto-route/ebpf.redirect-to-tun)")
+	}
+
+	if tunEBPF != nil && routingMark == 0 {
+		return nil, fmt.Errorf("ebpf needs to set routing-mark(routing-mark)")
 	}
 
 	if metaIPtables {
