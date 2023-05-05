@@ -1,0 +1,231 @@
+# Port of HTTP(S) proxy server on the local end
+#port: 7890
+
+# Port of SOCKS5 proxy server on the local end
+#socks-port: 7891
+
+# Transparent proxy server port for Linux and macOS (Redirect TCP and TProxy UDP)
+#redir-port: 7892
+# Transparent proxy server port for Linux (TProxy TCP and TProxy UDP)
+#tproxy-port: 7893
+# HTTP(S) and SOCKS4(A)/SOCKS5 server on the same port
+mixed-port: 7890
+
+# authentication of local SOCKS5/HTTP(S) server
+# authentication:
+#  - "user1:pass1"
+#  - "user2:pass2"
+# Set to true to allow connections to the local-end server from
+# other LAN IP addresses
+allow-lan: true
+
+# This is only applicable when `allow-lan` is `true`
+# '*': bind all IP addresses
+# 192.168.122.11: bind a single IPv4 address
+# "[aaaa::a8aa:ff:fe09:57d8]": bind a single IPv6 address
+bind-address: '*'
+
+# Clash router working mode
+# rule: rule-based packet routing
+# global: all packets will be forwarded to a single endpoint
+# direct: directly forward the packets to the Internet
+mode: rule
+
+# Clash by default prints logs to STDOUT
+# info / warning / error / debug / silent
+log-level: info
+
+# When set to false, resolver won't translate hostnames to IPv6 addresses
+ipv6: false
+
+# RESTful web API listening address
+external-controller: 0.0.0.0:9090
+#external-ui: yacd
+secret:
+
+# Static hosts for DNS server and connection establishment (like /etc/hosts)
+#
+# Wildcard hostnames are supported (e.g. *.clash.dev, *.foo.*.example.com)
+# Non-wildcard domain names have a higher priority than wildcard domain names
+# e.g. foo.example.com > *.example.com > .example.com
+# P.S. +.foo.com equals to .foo.com and foo.com
+hosts: null
+# '*.clash.dev': 127.0.0.1
+# '.dev': 127.0.0.1
+# 'alpha.clash.dev': '::1'
+profile:
+  # Store the `select` results in $HOME/.config/clash/.cache
+  # set false If you don't want this behavior
+  # when two different configurations have groups with the same name, the selected values are shared
+  store-selected: true
+
+  # persistence fakeip
+  store-fake-ip: true
+
+# Outbound interface name
+interface-name: ens34
+
+tun:
+  enable: true
+  stack: system # or gvisor
+  dns-hijack:
+    - any:53
+  #   - 8.8.8.8:53
+  #   - tcp://8.8.8.8:53
+  #auto-route: true
+
+ebpf:
+  redirect-to-tun:
+    - ens34
+
+routing-mark: 666
+
+# DNS server settings
+# This section is optional. When not present, the DNS server will be disabled.
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false # when the false, response to AAAA questions will be empty
+  # These nameservers are used to resolve the DNS nameserver hostnames below.
+  # Specify IP addresses only
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  # use-hosts: true # lookup hosts and return IP record
+  # Hostnames in this list will not be resolved with fake IPs
+  # i.e. questions to these domain names will always be answered with their
+  # real IP addresses
+  fake-ip-filter:
+    - '*.lan'
+
+  # Supports UDP, TCP, DoT, DoH. You can specify the port to connect to.
+  # All DNS questions are sent directly to the nameserver, without proxies
+  # involved. Clash answers the DNS question with the first result gathered.
+  nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+proxies:
+  - name: "SOCKS5_XXXXX"
+    type: trojan
+    server: xx.xx.xx
+    port: 443
+    password: xx.xx.xx
+    udp: true
+
+
+proxy-groups:
+  - name: "GFW_PROXY"
+    type: select
+    proxies:
+      - SOCKS5_XXXXX
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 300
+
+rules:
+  - PROCESS-NAME,adguard,DIRECT
+  - PROCESS-NAME,tailscaled,DIRECT
+  # Custom Domain
+  - DOMAIN,steamcommunity.com,GFW_PROXY
+  # RULE-SET
+  - RULE-SET,private,DIRECT
+  - RULE-SET,reject,REJECT
+  - RULE-SET,gfw,GFW_PROXY
+  - RULE-SET,greatfire,GFW_PROXY
+  - RULE-SET,telegramcidr,GFW_PROXY
+  - GEOIP,CN,DIRECT
+  - MATCH,GFW_PROXY
+
+rule-providers:
+  reject:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/reject.txt"
+    path: ./ruleset/reject.yaml
+    interval: 86400
+
+  icloud:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/icloud.txt"
+    path: ./ruleset/icloud.yaml
+    interval: 86400
+
+  apple:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/apple.txt"
+    path: ./ruleset/apple.yaml
+    interval: 86400
+
+  google:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/google.txt"
+    path: ./ruleset/google.yaml
+    interval: 86400
+
+  proxy:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/proxy.txt"
+    path: ./ruleset/proxy.yaml
+    interval: 86400
+
+  direct:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt"
+    path: ./ruleset/direct.yaml
+    interval: 86400
+
+  private:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt"
+    path: ./ruleset/private.yaml
+    interval: 86400
+
+  gfw:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt"
+    path: ./ruleset/gfw.yaml
+    interval: 86400
+
+  greatfire:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/greatfire.txt"
+    path: ./ruleset/greatfire.yaml
+    interval: 86400
+
+  tld-not-cn:
+    type: http
+    behavior: domain
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/tld-not-cn.txt"
+    path: ./ruleset/tld-not-cn.yaml
+    interval: 86400
+
+  telegramcidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt"
+    path: ./ruleset/telegramcidr.yaml
+    interval: 86400
+
+  cncidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt"
+    path: ./ruleset/cncidr.yaml
+    interval: 86400
+
+  lancidr:
+    type: http
+    behavior: ipcidr
+    url: "https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/lancidr.txt"
+    path: ./ruleset/lancidr.yaml
+    interval: 86400
