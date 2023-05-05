@@ -52,7 +52,39 @@ dns:
     - 114.114.114.114
 ```
 
-### 2.2、启动 TPClash
+### 2.2、TUN 配合 eBPF 配置
+
+```yaml
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - any:53
+  #   - 8.8.8.8:53
+  #   - tcp://8.8.8.8:53
+  # auto-route 与 ebpf 冲突, 不能同时使用
+  #auto-route: true
+
+# ebpf 需要指定物理网卡
+ebpf:
+  redirect-to-tun:
+    - ens34
+
+# ebpf 需要配置 mark
+routing-mark: 666
+
+# 开启 DNS 配置, 且使用 fake-ip 模式
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  default-nameserver:
+    - 114.114.114.114
+  nameserver:
+    - 114.114.114.114
+```
+
+### 2.3、启动 TPClash
 
 **初次使用的用户推荐命令行执行并增加 `--test` 参数, 该参数保证 TPClash 在启动 5 分钟后自动退出, 如果出现断网等情况也能自行恢复. TPClash 支持的所有命令可以通过 `--help` 查看:**
 
@@ -76,7 +108,9 @@ Flags:
   -v, --version             version for tpclash
 ```
 
-### 2.3、Meta 用户
+### 2.4、Meta 用户
+
+> 注意: Meta 版本暂时没有经过严格的测试, 作者并没有使用 Meta 版本的需求.
 
 从 `v0.0.16` 版本开始支持 Clash Meta 分支版本, Meta 用户**需要在配置文件中关闭 iptables 配置**:
 
@@ -85,13 +119,15 @@ iptables:
   enable: false
 ```
 
-### 2.4、设置流量转发
+### 2.5、设置流量转发
 
 TPClash 启动成功后, 将其他主机的网关指向当前 TPClash 服务器 IP 即可实现透明代理;
 对于其他主机请使用默认路由器 IP 或者类似 114 等公共 DNS 作为主机 DNS.
 **请不要将其他主机的 DNS 也设置为 TPClash 服务器 IP, 因为当前 Clash 可能并未监听 53 端口.**
 
-### 2.5、自动流量接管
+### 2.6、自动流量接管
+
+> 注意: arp 劫持(攻击)并不一定有效, 具体取决于内网有否有 arp 攻击拦截以及 arp 缓存失效策略等多种因素; arp 配置错误可能导致内网失联, 但一般关闭后可自行恢复.
 
 从 `v0.0.13` 版本起, TPClash 内置了一个 ARP 流量劫持功能, 可以通过 `--hijack-ip` 选项指定需要劫持的 IP 地址:
 
@@ -103,7 +139,7 @@ TPClash 启动成功后, 将其他主机的网关指向当前 TPClash 服务器 
 当该选项被设置后, TPClash 将会对目标 IP 发起 ARP 攻击, 从而强制接管目标地址的流量. 需要注意的是, 当目标 IP 被设置为 `0.0.0.0`
 时, TPClash 将会劫持所有内网流量, 这可能会因为配置错误导致整体断网, 所以请谨慎操作.
 
-### 2.6、在Docker容器中使用
+### 2.7、在Docker容器中使用
 
 在 Docker 容器中使用需要创建 `/dev/net/tun` 设备并允许修改 `iptables`; 同时需要设置 `net.ipv4.ip_forward` 与 `net.ipv4.conf.all.route_localnet` 内核参数.
 
