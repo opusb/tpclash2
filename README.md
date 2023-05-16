@@ -1,3 +1,18 @@
+* [Transparent proxy tool for Clash](#transparent-proxy-tool-for-clash)
+   * [一、TPClash 是什么](#一tpclash-是什么)
+   * [二、TPClash 使用](#二tpclash-使用)
+      * [2.1、TUN 模式配置](#21tun-模式配置)
+      * [2.2、TUN 配合 eBPF 配置](#22tun-配合-ebpf-配置)
+      * [2.3、启动 TPClash](#23启动-tpclash)
+      * [2.4、Meta 用户](#24meta-用户)
+      * [2.5、设置流量转发](#25设置流量转发)
+      * [2.6、自动流量接管](#26自动流量接管)
+      * [2.7、在Docker容器中使用](#27在docker容器中使用)
+      * [2.8、远程配置加载](#28远程配置加载)
+   * [三、TPClash 做了什么](#三tpclash-做了什么)
+   * [四、如何编译 TPClash](#四如何编译-tpclash)
+   * [五、其他说明](#五其他说明)
+
 # Transparent proxy tool for Clash
 
 > 这是一个用于 Clash Premium 的透明代理辅助工具, 由于众所周知周知的原因(**手笨**)而创建的.
@@ -96,16 +111,17 @@ Usage:
   tpclash [flags]
 
 Flags:
-      --clash-user string   clash runtime user (default "tpclash")
-  -c, --config string       clash config local path or remote url (default "/etc/clash.yaml")
-      --debug               enable debug log
-      --disable-extract     disable extract files
-  -h, --help                help for tpclash
-      --hijack-ip ipSlice   hijack target IP traffic (default [])
-  -d, --home string         clash home dir (default "/data/clash")
-      --test                run in test mode, exit automatically after 5 minutes
-  -u, --ui string           clash dashboard(official|yacd) (default "yacd")
-  -v, --version             version for tpclash
+  -i, --check-interval duration   remote config check interval (default 30s)
+  -c, --config string             clash config local path or remote url (default "/etc/clash.yaml")
+      --debug                     enable debug log
+      --disable-extract           disable extract files
+  -h, --help                      help for tpclash
+      --hijack-ip ipSlice         hijack target IP traffic (default [])
+  -d, --home string               clash home dir (default "/data/clash")
+      --http-header strings       http header when requesting a remote config(key=value)
+      --test                      run in test mode, exit automatically after 5 minutes
+  -u, --ui string                 clash dashboard(official|yacd) (default "yacd")
+  -v, --version                   version for tpclash
 ```
 
 ### 2.4、Meta 用户
@@ -141,6 +157,8 @@ TPClash 启动成功后, 将其他主机的网关指向当前 TPClash 服务器 
 
 ### 2.7、在Docker容器中使用
 
+> 官方 Docker 镜像正在开发中...
+
 在 Docker 容器中使用需要创建 `/dev/net/tun` 设备并允许修改 `iptables`; 同时需要设置 `net.ipv4.ip_forward` 与 `net.ipv4.conf.all.route_localnet` 内核参数.
 
 因此在创建容器时需要加入以下参数:
@@ -164,6 +182,16 @@ chmod 777 /dev/net/tun
 ```
 
 之后便可正常在docker容器中使用 tpclash.
+
+### 2.8、远程配置加载
+
+为了方便使用, 在 `v0.0.19` 版本开始支持远程配置加载; 从 `v0.0.22` 版本开始进一步优化远程配置加载功能, 目前使用方式如下:
+
+- 1、使用 `-c` 参数指定 http(s) 远程配置文件地址, 例如 `-c http://127.0.0.1:8080/clash.yaml`
+- 2、使用 `-i` 参数指定检查间隔时间, tpclash 会按照这个时间频率去检查远程配置是否与本地一致, 不一致则更新并自动重载
+- 3、增加了 `--http-header` 选项用于用于设置下载远程配置的 http 请求头, 用于支持下载公网带认证的托管配置, 例如 `--http-header "Authorization=Basic YWRtaW46MTIz"`
+
+**注意: 如果远程配置修改了端口等配置, 那么仍需要重新启动 tpclash, 因为 tpclash 重载无法照顾到底层的端口变更.**
 
 ## 三、TPClash 做了什么
 
