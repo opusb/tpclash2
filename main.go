@@ -182,6 +182,7 @@ func tpClashInit() {
 		updateCh = make(chan struct{})
 		remoteAddr := conf.ClashConfig
 		conf.ClashConfig = filepath.Join(conf.ClashHome, clashRemoteConfig)
+		_ = os.Remove(conf.ClashConfig)
 
 		go func() {
 			req, err := http.NewRequest("GET", remoteAddr, nil)
