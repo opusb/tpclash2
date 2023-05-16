@@ -5,14 +5,17 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/viper"
 )
 
 type TPClashConf struct {
-	ClashHome   string
-	ClashConfig string
-	ClashUI     string
+	ClashHome     string
+	ClashConfig   string
+	ClashUI       string
+	HttpHeader    []string
+	CheckInterval time.Duration
 
 	HijackIP       []net.IP
 	DisableExtract bool

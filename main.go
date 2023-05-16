@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -33,6 +34,8 @@ var build string
 var commit string
 var version string
 var clash string
+
+var updateCh chan struct{}
 
 var rootCmd = &cobra.Command{
 	Use:   "tpclash",
@@ -82,6 +85,41 @@ var rootCmd = &cobra.Command{
 			}
 		}
 
+		go func() {
+			if updateCh == nil {
+				return
+			}
+
+			for range updateCh {
+				logrus.Info("[main] local config changed, clash reloading...")
+
+				apiAddr := viper.GetString("external-controller")
+				if apiAddr == "" {
+					apiAddr = "127.0.0.1:9090"
+				}
+				secret := viper.GetString("secret")
+
+				req, err := http.NewRequest("PUT", "http://"+apiAddr+"/configs", bytes.NewReader([]byte(fmt.Sprintf(`{"path": "%s"}`, conf.ClashConfig))))
+				if err != nil {
+					logrus.Errorf("failed to create reload req: %v", err)
+					return
+				}
+				req.Header.Set("Authorization", "Bearer "+secret)
+				cli := &http.Client{}
+
+				resp, err := cli.Do(req)
+				defer func() { _ = resp.Body.Close() }()
+				if err != nil {
+					logrus.Errorf("failed to reload config: %v", err)
+				}
+				if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+					logrus.Errorf("failed to reload config: status %d", resp.StatusCode)
+				}
+
+				logrus.Info("[main] local config reload success...")
+			}
+		}()
+
 		<-time.After(3 * time.Second)
 		logrus.Info("[main] 🍄 提莫队长正在待命...")
 
@@ -111,6 +149,9 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashUI, "ui", "u", "yacd", "clash dashboard(official|yacd)")
 	rootCmd.PersistentFlags().BoolVar(&conf.Debug, "debug", false, "enable debug log")
 
+	rootCmd.PersistentFlags().DurationVarP(&conf.CheckInterval, "check-interval", "i", 30*time.Second, "remote config check interval")
+	rootCmd.PersistentFlags().StringSliceVar(&conf.HttpHeader, "http-header", []string{}, "http header when requesting a remote config(key=value)")
+
 	rootCmd.PersistentFlags().IPSliceVar(&conf.HijackIP, "hijack-ip", nil, "hijack target IP traffic")
 	rootCmd.PersistentFlags().BoolVar(&conf.DisableExtract, "disable-extract", false, "disable extract files")
 	rootCmd.PersistentFlags().BoolVar(&conf.AutoExit, "test", false, "run in test mode, exit automatically after 5 minutes")
@@ -138,22 +179,78 @@ func tpClashInit() {
 		strings.HasPrefix(conf.ClashConfig, "https://") {
 		logrus.Info("[main] use remote config...")
 
-		resp, err := http.Get(conf.ClashConfig)
-		if err != nil {
-			logrus.Fatalf("failed to download remote config: %v", err)
-		}
-
+		updateCh = make(chan struct{})
+		remoteAddr := conf.ClashConfig
 		conf.ClashConfig = filepath.Join(conf.ClashHome, clashRemoteConfig)
-		cf, err := os.OpenFile(conf.ClashConfig, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
-		if err != nil {
-			logrus.Fatalf("failed to create local config file: %v", err)
-		}
-		defer func() { _ = cf.Close() }()
 
-		_, err = io.Copy(cf, resp.Body)
-		if err != nil {
-			logrus.Fatalf("failed to save remote config: %v", err)
-		}
+		go func() {
+			req, err := http.NewRequest("GET", remoteAddr, nil)
+			if err != nil {
+				logrus.Fatalf("failed to create remote config req: %v", err)
+			}
+
+			for _, kv := range conf.HttpHeader {
+				ss := strings.Split(kv, "=")
+				if len(ss) != 2 {
+					logrus.Fatalf("failed to parse http header: %s", kv)
+				}
+				req.Header.Set(ss[0], ss[1])
+			}
+
+			cli := &http.Client{Timeout: 10 * time.Second}
+
+			c := time.Tick(conf.CheckInterval)
+			for range c {
+				logrus.Info("[main] checking remote config...")
+
+				resp, err := cli.Do(req)
+				if err != nil {
+					logrus.Errorf("failed to download remote config: %v", err)
+					continue
+				}
+				defer func() { _ = resp.Body.Close() }()
+
+				if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+					logrus.Errorf("failed to get remote config: status code %d", resp.StatusCode)
+					continue
+				}
+
+				var buf bytes.Buffer
+				if _, err = io.Copy(&buf, resp.Body); err != nil {
+					logrus.Fatalf("failed to copy resp: %v", err)
+					continue
+				}
+
+				if _, err = os.Stat(conf.ClashConfig); err == nil {
+					bs, err := os.ReadFile(conf.ClashConfig)
+					if err != nil {
+						logrus.Errorf("failed to read config file: %s: %v", conf.ClashConfig, err)
+						continue
+					}
+					if string(bs) == buf.String() {
+						logrus.Info("[main] remote file not change, skip...")
+						continue
+					}
+
+					logrus.Info("[main] remote file changed, updating local config...")
+					if err = os.WriteFile(conf.ClashConfig, buf.Bytes(), 0644); err != nil {
+						logrus.Errorf("failed to save remote config: %v", err)
+					}
+					updateCh <- struct{}{}
+				} else {
+					logrus.Info("[main] local config not found, updating local config...")
+					if err = os.WriteFile(conf.ClashConfig, buf.Bytes(), 0644); err != nil {
+						logrus.Errorf("failed to save remote config: %v", err)
+					}
+					updateCh <- struct{}{}
+				}
+			}
+		}()
+	}
+
+	if _, err := os.Stat(conf.ClashConfig); err != nil {
+		logrus.Info("[main] waiting remote config downloaded...")
+		<-updateCh
 	}
 
 	// load clash config
