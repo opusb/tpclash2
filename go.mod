@@ -7,7 +7,7 @@ require (
 	github.com/irai/packet v0.4.0
 	github.com/lorenzosaino/go-sysctl v0.3.1
 	github.com/mritd/logrus v0.0.0-20230307034024-d7056f0b6fa7
-	github.com/sirupsen/logrus v1.9.2
+	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
 )
