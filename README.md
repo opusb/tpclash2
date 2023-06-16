@@ -168,7 +168,7 @@ docker run -dt \
   mritd/tpclash
 ```
 
-**此命令假设配置文件位于宿主机的 `/root/clash.yaml` 位置, 其他位置请自行替换; 该镜像采用 [Earthly](https://earthly.dev/) 编译, Earthlyfile 存储在 [autobuild](https://github.com/mritd/autobuild/tree/main/tpclash) 仓库.**
+**此命令假设配置文件位于宿主机的 `/root/clash.yaml` 位置, 其他位置请自行替换; 该镜像采用 [Earthly](https://earthly.dev/) 编译, Earthfile 存储在 [autobuild](https://github.com/mritd/autobuild/tree/main/tpclash) 仓库.**
 
 ### 2.8、远程配置加载
 
