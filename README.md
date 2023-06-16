@@ -1,17 +1,17 @@
-* [Transparent proxy tool for Clash](#transparent-proxy-tool-for-clash)
-   * [一、TPClash 是什么](#一tpclash-是什么)
-   * [二、TPClash 使用](#二tpclash-使用)
-      * [2.1、TUN 模式配置](#21tun-模式配置)
-      * [2.2、TUN 配合 eBPF 配置](#22tun-配合-ebpf-配置)
-      * [2.3、启动 TPClash](#23启动-tpclash)
-      * [2.4、Meta 用户](#24meta-用户)
-      * [2.5、设置流量转发](#25设置流量转发)
-      * [2.6、自动流量接管](#26自动流量接管)
-      * [2.7、在Docker容器中使用](#27在docker容器中使用)
-      * [2.8、远程配置加载](#28远程配置加载)
-   * [三、TPClash 做了什么](#三tpclash-做了什么)
-   * [四、如何编译 TPClash](#四如何编译-tpclash)
-   * [五、其他说明](#五其他说明)
+- [Transparent proxy tool for Clash](#transparent-proxy-tool-for-clash)
+  - [一、TPClash 是什么](#一tpclash-是什么)
+  - [二、TPClash 使用](#二tpclash-使用)
+    - [2.1、TUN 模式配置](#21tun-模式配置)
+    - [2.2、TUN 配合 eBPF 配置](#22tun-配合-ebpf-配置)
+    - [2.3、启动 TPClash](#23启动-tpclash)
+    - [2.4、Meta 用户](#24meta-用户)
+    - [2.5、设置流量转发](#25设置流量转发)
+    - [2.6、自动流量接管](#26自动流量接管)
+    - [2.7、在Docker容器中使用](#27在docker容器中使用)
+    - [2.8、远程配置加载](#28远程配置加载)
+  - [三、TPClash 做了什么](#三tpclash-做了什么)
+  - [四、如何编译 TPClash](#四如何编译-tpclash)
+  - [五、其他说明](#五其他说明)
 
 # Transparent proxy tool for Clash
 
@@ -157,31 +157,18 @@ TPClash 启动成功后, 将其他主机的网关指向当前 TPClash 服务器 
 
 ### 2.7、在Docker容器中使用
 
-> 官方 Docker 镜像正在开发中...
-
-在 Docker 容器中使用需要创建 `/dev/net/tun` 设备并允许修改 `iptables`; 同时需要设置 `net.ipv4.ip_forward` 与 `net.ipv4.conf.all.route_localnet` 内核参数.
-
-因此在创建容器时需要加入以下参数:
+如果想要在 Docker 中使用 tpclash, 只需要挂载外部配置文件即可:
 
 ```sh
-docker run \
-  --sysctl net.ipv4.ip_forward=1 \
-  --sysctl net.ipv4.conf.all.route_localnet=1 \
-  --cap-add MKNOD \
-  --cap-add NET_ADMIN \
-  --cap-add NET_RAW \
-  ubuntu:20.04
+docker run -dt \
+  --name tpclash \
+  --privileged \
+  --network=host \
+  -v /root/clash.yaml:/etc/clash.yaml \
+  mritd/tpclash
 ```
 
-并在容器创建后创建 `/dev/net/tun` 设备:
-
-```
-mkdir /dev/net
-mknod /dev/net/tun c 10 200
-chmod 777 /dev/net/tun
-```
-
-之后便可正常在docker容器中使用 tpclash.
+**此命令假设配置文件位于宿主机的 `/root/clash.yaml` 位置, 其他位置请自行替换. 该镜像采用 Earthly 变异, Earthlyfile 存储在 [autobuild](https://github.com/mritd/autobuild/tree/main/tpclash) 仓库.**
 
 ### 2.8、远程配置加载
 
