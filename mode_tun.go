@@ -3,34 +3,65 @@ package main
 import (
 	"fmt"
 
-	"github.com/coreos/go-iptables/iptables"
+	"github.com/sirupsen/logrus"
+
+	"github.com/google/nftables/expr"
+
+	"github.com/google/nftables"
 )
 
 type tunMode struct {
-	ins  *iptables.IPTables
+	nft  *nftables.Conn
 	tpcc *TPClashConf
 	cc   *ClashConf
 }
 
 func (m *tunMode) addMisc() error {
-	ok, err := m.ins.ChainExists(tableFilter, chainDockerUser)
+	cs, err := m.nft.ListChainsOfTableFamily(nftables.TableFamilyIPv4)
 	if err != nil {
-		return fmt.Errorf("failed to check chain %s/%s: %s", tableFilter, chainDockerUser, err)
+		logrus.Errorf("[nftables] failed to list nftables chain: %v", err)
+		return nil
 	}
-	if ok {
-		// iptables -t filter -I DOCKER-USER -j ACCEPT
-		err = m.ins.Insert(tableFilter, chainDockerUser, 1, "-j", actionAccept)
-		if err != nil {
-			return fmt.Errorf("failed to append docker rules: %v", err)
+	for _, chain := range cs {
+		if chain.Name == chainDockerUser {
+			m.nft.InsertRule(&nftables.Rule{
+				Table: chain.Table,
+				Chain: chain,
+				Exprs: []expr.Any{&expr.Verdict{
+					Kind: expr.VerdictAccept,
+				}},
+			})
+			return m.nft.Flush()
 		}
 	}
 	return nil
 }
+
 func (m *tunMode) delMisc() error {
-	// iptables -t filter -D DOCKER-USER -j ACCEPT
-	err := m.ins.DeleteIfExists(tableFilter, chainDockerUser, "-j", actionAccept)
+	cs, err := m.nft.ListChainsOfTableFamily(nftables.TableFamilyIPv4)
 	if err != nil {
-		return fmt.Errorf("failed to delete docker rules: %v", err)
+		logrus.Errorf("[nftables] failed to list nftables chain: %v", err)
+		return nil
+	}
+	for _, chain := range cs {
+		if chain.Name == chainDockerUser {
+			rs, err := m.nft.GetRules(chain.Table, chain)
+			if err != nil {
+				return fmt.Errorf("failed to get nftables rules: %v", err)
+			}
+			for _, rule := range rs {
+				if len(rule.Exprs) == 1 {
+					v, ok := rule.Exprs[0].(*expr.Verdict)
+					if ok && v.Kind == expr.VerdictAccept {
+						if err = m.nft.DelRule(rule); err != nil {
+							return fmt.Errorf("failed to delete nftables rules: %v", err)
+						}
+					}
+				}
+			}
+
+			return m.nft.Flush()
+		}
 	}
 	return nil
 }

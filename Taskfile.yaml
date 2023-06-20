@@ -8,9 +8,9 @@ vars:
   BUILD_DATE:
     sh: date '+%F %T'
   PREMIUM_VERSION:
-    sh: curl -sSL https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.name'
+    sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.name'
   META_VERSION:
-    sh: curl -sSL https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.name'
+    sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.name'
 
 tasks:
   clean:
@@ -98,7 +98,7 @@ tasks:
     desc: Download Clash Premium
     vars:
       CLASH_URL:
-        sh: curl -sSL https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.assets[].browser_download_url | select (. | test("clash-{{.PLATFORM}}-\\d{4}.*gz"))'
+        sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.assets[].browser_download_url | select (. | test("clash-{{.PLATFORM}}-\\d{4}.*gz"))'
     cmds:
       - curl -sSL {{.CLASH_URL}} > build/clash-{{.PLATFORM}}.gz
       - gzip -d build/clash-{{.PLATFORM}}.gz
@@ -110,7 +110,7 @@ tasks:
     desc: Download Clash Meta
     vars:
       CLASH_META_URL:
-        sh: curl -sSL https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.assets[].browser_download_url | select (. | test("clash.meta-{{.PLATFORM}}-v\\d+.*gz"))'
+        sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.assets[].browser_download_url | select (. | test("clash.meta-{{.PLATFORM}}-v\\d+.*gz"))'
     cmds:
       - curl -sSL {{.CLASH_META_URL}} > build/clash-meta-{{.PLATFORM}}.gz
       - gzip -d build/clash-meta-{{.PLATFORM}}.gz
@@ -123,14 +123,14 @@ tasks:
     cmds:
       - task: download-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - mv build/clash-{{.PLATFORM}} static/xclash
+      - cp -f build/clash-{{.PLATFORM}} static/xclash
 
   move-clash-meta:
     desc: Copy Clash Meta To Embed FS
     cmds:
       - task: download-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - mv build/clash-meta-{{.PLATFORM}} static/xclash
+      - cp -f build/clash-meta-{{.PLATFORM}} static/xclash
 
   build-tpclash-premium:
     desc: Build TPClash With Clash Premium
@@ -146,8 +146,13 @@ tasks:
         vars: { PLATFORM: "{{.PLATFORM}}" }
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
-        go build -trimpath -o build/tpclash-premium-{{.PLATFORM}} -ldflags \
-        "-w -s -X 'main.build={{.BUILD_DATE}}' -X 'main.commit={{.COMMIT_SHA}}' -X 'main.version={{.VERSION}}' -X 'main.clash={{.PREMIUM_VERSION}}'"
+        go build -trimpath -o build/tpclash-premium-{{.PLATFORM}} \
+          -ldflags "{{if not .DEBUG}}-w -s{{end}}
+          -X 'main.build={{.BUILD_DATE}}'
+          -X 'main.commit={{.COMMIT_SHA}}'
+          -X 'main.version={{.VERSION}}'
+          -X 'main.clash={{.PREMIUM_VERSION}}'" \
+          {{if .DEBUG}}-gcflags "all=-N -l"{{end}}
 
   build-tpclash-meta:
     desc: Build TPClash With Clash Meta
@@ -163,8 +168,14 @@ tasks:
         vars: { PLATFORM: "{{.PLATFORM}}" }
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
-        go build -trimpath -o build/tpclash-meta-{{.PLATFORM}} -ldflags \
-        "-w -s -X 'main.build={{.BUILD_DATE}}' -X 'main.commit={{.COMMIT_SHA}}' -X 'main.version={{.VERSION}}' -X 'main.clash=Meta {{.META_VERSION}}'"
+        go build -trimpath -o build/tpclash-meta-{{.PLATFORM}} \
+          -ldflags "{{if not .DEBUG}}-w -s{{end}}
+          -X 'main.build={{.BUILD_DATE}}'
+          -X 'main.commit={{.COMMIT_SHA}}'
+          -X 'main.version={{.VERSION}}'
+          -X 'main.clash=Meta {{.META_VERSION}}'" \
+          {{if .DEBUG}}-gcflags "all=-N -l"{{end}}
+
 
   linux-386-premium:
     desc: Build TPClash With Clash Premium(linux/386)
@@ -401,4 +412,4 @@ tasks:
       - task: linux-amd64-meta
       - task: linux-amd64-v3-meta
       - task: linux-arm64-meta
-      - rm -rf static
+      - rm -rf static build/clash-*

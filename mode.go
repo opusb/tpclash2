@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/coreos/go-iptables/iptables"
+	"github.com/google/nftables"
 )
 
 type ProxyMode interface {
@@ -20,13 +20,14 @@ func process(fns ...func() error) error {
 }
 
 func NewProxyMode(cc *ClashConf, tpcc *TPClashConf) (ProxyMode, error) {
-	ip4, err := newIPTables(iptables.ProtocolIPv4)
+
+	conn, err := nftables.New()
 	if err != nil {
 		return nil, err
 	}
 
 	return &tunMode{
-		ins:  ip4,
+		nft:  conn,
 		tpcc: tpcc,
 		cc:   cc,
 	}, nil
