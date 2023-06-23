@@ -26,6 +26,7 @@ type TPClashConf struct {
 	ClashConfig   string
 	ClashUI       string
 	HttpHeader    []string
+	HttpTimeout   time.Duration
 	CheckInterval time.Duration
 
 	DisableExtract bool
@@ -274,7 +275,7 @@ func AutoReload(updateCh chan string, writePath string) {
 			continue
 		}
 		req.Header.Set("Authorization", "Bearer "+secret)
-		cli := &http.Client{}
+		cli := &http.Client{Timeout: 5 * time.Second}
 
 		resp, err := cli.Do(req)
 		if err != nil {
@@ -309,7 +310,7 @@ func loadRemoteConfig(conf *TPClashConf) (string, error) {
 		req.Header.Set(ss[0], ss[1])
 	}
 
-	cli := &http.Client{Timeout: 10 * time.Second}
+	cli := &http.Client{Timeout: conf.HttpTimeout}
 	resp, err := cli.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("[config] failed to download remote config: %v", err)
