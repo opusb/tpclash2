@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -29,8 +26,9 @@ var rootCmd = &cobra.Command{
 	Use:   "tpclash",
 	Short: "Transparent proxy tool for Clash",
 	Run: func(_ *cobra.Command, _ []string) {
+		fmt.Printf("%s\nVersion: %s\nBuild: %s\nClash Core: %s\nCommit: %s\n\n", logo, version, build, clash, commit)
+
 		if conf.PrintVersion {
-			fmt.Printf("%s\nVersion: %s\nBuild: %s\nClash Core: %s\nCommit: %s\n", logo, version, build, clash, commit)
 			return
 		}
 
@@ -83,11 +81,11 @@ var rootCmd = &cobra.Command{
 			cancel()
 		}
 		if cmd.Process == nil {
-			logrus.Errorf("failed to start clash process: %v", cmd.Args)
 			cancel()
+			logrus.Fatalf("[main] failed to start clash process: %v", cmd.Args)
 		}
 
-		proxyMode, err := NewProxyMode(&conf)
+		proxyMode, err := NewProxyMode()
 		if err != nil {
 			logrus.Fatalf("[main] failed to create proxy mode: %v", err)
 		}
@@ -97,58 +95,12 @@ var rootCmd = &cobra.Command{
 		}
 
 		// Watch clash config changes, and automatically reload the config
-		go func() {
-			for ccStr := range updateCh {
-				logrus.Info("[main] clash config changed, reloading...")
-
-				ccStr = AutoFix(ccStr)
-				cc, err := CheckConfig(ccStr)
-				if err != nil {
-					logrus.Errorf("[main] an error was detected in the clash config, skipping automatic reload:\n %v", err)
-					continue
-				}
-
-				if err := os.WriteFile(clashConfPath, []byte(ccStr), 0644); err != nil {
-					logrus.Errorf("[main] failed to copy clash config: %v", err)
-					continue
-				}
-
-				apiAddr := cc.ExternalController
-				if apiAddr == "" {
-					apiAddr = "127.0.0.1:9090"
-				}
-				secret := cc.Secret
-
-				req, err := http.NewRequest("PUT", "http://"+apiAddr+"/configs", bytes.NewReader([]byte(fmt.Sprintf(`{"path": "%s"}`, clashConfPath))))
-				if err != nil {
-					logrus.Errorf("[main] failed to create reload req: %v", err)
-					continue
-				}
-				req.Header.Set("Authorization", "Bearer "+secret)
-				cli := &http.Client{}
-
-				resp, err := cli.Do(req)
-				if err != nil {
-					logrus.Errorf("[main] failed to reload config: %v", err)
-					continue
-				}
-				defer func() { _ = resp.Body.Close() }()
-
-				if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
-					var msg bytes.Buffer
-					_, _ = io.Copy(&msg, resp.Body)
-					logrus.Errorf("[main] failed to reload config: status %d: %s", resp.StatusCode, msg.String())
-				}
-
-				logrus.Info("[main] clash config reload success...")
-			}
-		}()
+		go AutoReload(updateCh, clashConfPath)
 
 		logrus.Info("[main] 🍄 提莫队长正在待命...")
-
 		<-ctx.Done()
-		logrus.Info("[main] 🛑 TPClash 正在停止...")
 
+		logrus.Info("[main] 🛑 TPClash 正在停止...")
 		if err := proxyMode.DisableProxy(); err != nil {
 			logrus.Error(err)
 		}

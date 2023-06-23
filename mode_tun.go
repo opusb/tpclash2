@@ -11,8 +11,7 @@ import (
 )
 
 type tunMode struct {
-	nft  *nftables.Conn
-	tpcc *TPClashConf
+	nft *nftables.Conn
 }
 
 func (m *tunMode) addMisc() error {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -10,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"gopkg.in/yaml.v3"
@@ -72,10 +74,6 @@ type ClashConf struct {
 	IPTables struct {
 		Enable bool `yaml:"enable"`
 	} `yaml:"iptables"`
-}
-
-type FixData struct {
-	IfName string
 }
 
 func CheckConfig(c string) (*ClashConf, error) {
@@ -226,6 +224,73 @@ func WatchConfig(ctx context.Context, conf *TPClashConf) chan string {
 		}()
 	}
 	return updateCh
+}
+
+func AutoFix(c string) string {
+	var buf bytes.Buffer
+	tpl, err := template.New("").Funcs(template.FuncMap{
+		"IfName": IfName,
+	}).Parse(c)
+
+	if err != nil {
+		logrus.Errorf("[autofix] failed to parse template: %v", err)
+		return c
+	}
+
+	// Auto-inject main network interface name
+	if err = tpl.Execute(&buf, nil); err != nil {
+		logrus.Errorf("[autofix] failed to execute template: %v", err)
+		return c
+	}
+
+	return buf.String()
+}
+
+func AutoReload(updateCh chan string, writePath string) {
+	for ccStr := range updateCh {
+		logrus.Info("[config] clash config changed, reloading...")
+
+		ccStr = AutoFix(ccStr)
+		cc, err := CheckConfig(ccStr)
+		if err != nil {
+			logrus.Errorf("[config] an error was detected in the clash config, skipping automatic reload:\n %v", err)
+			continue
+		}
+
+		if err := os.WriteFile(writePath, []byte(ccStr), 0644); err != nil {
+			logrus.Errorf("[config] failed to copy clash config: %v", err)
+			continue
+		}
+
+		apiAddr := cc.ExternalController
+		if apiAddr == "" {
+			apiAddr = "127.0.0.1:9090"
+		}
+		secret := cc.Secret
+
+		req, err := http.NewRequest("PUT", "http://"+apiAddr+"/configs", bytes.NewReader([]byte(fmt.Sprintf(`{"path": "%s"}`, writePath))))
+		if err != nil {
+			logrus.Errorf("[config] failed to create reload req: %v", err)
+			continue
+		}
+		req.Header.Set("Authorization", "Bearer "+secret)
+		cli := &http.Client{}
+
+		resp, err := cli.Do(req)
+		if err != nil {
+			logrus.Errorf("[config] failed to reload config: %v", err)
+			continue
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+			var msg bytes.Buffer
+			_, _ = io.Copy(&msg, resp.Body)
+			logrus.Errorf("[config] failed to reload config: status %d: %s", resp.StatusCode, msg.String())
+		}
+
+		logrus.Info("[config] clash config reload success...")
+	}
 }
 
 func loadRemoteConfig(conf *TPClashConf) (string, error) {
