@@ -5,7 +5,6 @@ import (
 	"io"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
@@ -13,45 +12,6 @@ import (
 
 //go:embed static
 var static embed.FS
-
-func mkHomeDir() {
-	info, err := os.Stat(conf.ClashHome)
-	if err != nil {
-		if os.IsNotExist(err) {
-			err = os.MkdirAll(conf.ClashHome, 0755)
-			if err != nil {
-				logrus.Fatalf("failed to create clash home dir: %v", err)
-			}
-		} else {
-			logrus.Fatalf("failed to open clash home dir: %v", err)
-		}
-	} else if !info.IsDir() {
-		logrus.Fatalf("clash home path is not a dir")
-	}
-}
-
-func copyFiles() {
-	if conf.DisableExtract {
-		logrus.Warn("[static] skip copy static files...")
-		return
-	}
-
-	logrus.Info("[static] copy static files...")
-
-	dirEntries, err := static.ReadDir("static")
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	err = extract(static, dirEntries, "static", conf.ClashHome)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	bs, err := exec.Command("chmod", "+x", filepath.Join(conf.ClashHome, "xclash")).CombinedOutput()
-	if err != nil {
-		logrus.Fatalf("[static] failed to change file permission: %s, %v", bs, err)
-	}
-}
 
 func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) error {
 	for _, dirEntry := range dirEntries {
@@ -99,7 +59,41 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) erro
 	return nil
 }
 
-func ensureClashFiles() {
-	mkHomeDir()
-	copyFiles()
+func ExtractFiles(conf *TPClashConf) {
+	logrus.Info("[static] creating storage dir...")
+	info, err := os.Stat(conf.ClashHome)
+	if err != nil {
+		if os.IsNotExist(err) {
+			err = os.MkdirAll(conf.ClashHome, 0755)
+			if err != nil {
+				logrus.Fatalf("[static] failed to create clash home dir: %v", err)
+			}
+		} else {
+			logrus.Fatalf("failed to open clash home dir: %v", err)
+		}
+	} else if !info.IsDir() {
+		logrus.Fatalf("[static] clash home path is not a dir")
+	}
+
+	if conf.DisableExtract {
+		logrus.Warn("[static] skip copy static files...")
+		return
+	}
+
+	logrus.Info("[static] copy static files...")
+
+	dirEntries, err := static.ReadDir("static")
+	if err != nil {
+		logrus.Fatal(err)
+	}
+	err = extract(static, dirEntries, "static", conf.ClashHome)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	//bs, err := exec.Command("chmod", "+x", filepath.Join(conf.ClashHome, "xclash")).CombinedOutput()
+	//if err != nil {
+	//	logrus.Fatalf("[static] failed to change file permission: %s, %v", bs, err)
+	//}
+
 }

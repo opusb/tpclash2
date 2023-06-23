@@ -1,13 +1,22 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v3"
+
+	"github.com/fsnotify/fsnotify"
+
+	"github.com/sirupsen/logrus"
 )
 
 type TPClashConf struct {
@@ -17,86 +26,249 @@ type TPClashConf struct {
 	HttpHeader    []string
 	CheckInterval time.Duration
 
-	HijackIP       []net.IP
 	DisableExtract bool
-	AutoExit       bool
+	PrintVersion   bool
 
 	Debug bool
 }
 
 type ClashConf struct {
-	Debug         bool
-	InterfaceName string
+	Port               int    `yaml:"port"`
+	SocksPort          int    `yaml:"socks-port"`
+	MixedPort          int    `yaml:"mixed-port"`
+	AllowLan           bool   `yaml:"allow-lan"`
+	BindAddress        string `yaml:"bind-address"`
+	Mode               string `yaml:"mode"`
+	LogLevel           string `yaml:"log-level"`
+	Ipv6               bool   `yaml:"ipv6"`
+	ExternalController string `yaml:"external-controller"`
+	ExternalUI         string `yaml:"external-ui"`
+	Secret             string `yaml:"secret"`
+	InterfaceName      string `yaml:"interface-name"`
+	Ebpf               struct {
+		RedirectToTun []string `yaml:"redirect-to-tun"`
+	} `yaml:"ebpf"`
+	RoutingMark int `yaml:"routing-mark"`
+	Tun         struct {
+		Enable              bool     `yaml:"enable"`
+		Stack               string   `yaml:"stack"`
+		DNSHijack           []string `yaml:"dns-hijack"`
+		AutoRedir           bool     `yaml:"auto-redir"`
+		AutoRoute           bool     `yaml:"auto-route"`
+		AutoDetectInterface bool     `yaml:"auto-detect-interface"`
+	} `yaml:"tun"`
+	DNS struct {
+		Enable            bool     `yaml:"enable"`
+		Listen            string   `yaml:"listen"`
+		Ipv6              bool     `yaml:"ipv6"`
+		DefaultNameserver []string `yaml:"default-nameserver"`
+		EnhancedMode      string   `yaml:"enhanced-mode"`
+		FakeIPRange       string   `yaml:"fake-ip-range"`
+		FakeIPFilter      []string `yaml:"fake-ip-filter"`
+		Nameserver        []string `yaml:"nameserver"`
+	} `yaml:"dns"`
+
+	// Meta
+	IPTables struct {
+		Enable bool `yaml:"enable"`
+	} `yaml:"iptables"`
 }
 
-// ParseClashConf Parses clash configuration and performs necessary checks
-// based on proxy mode
-func ParseClashConf() (*ClashConf, error) {
-	debug := viper.GetString("log-level")
-	enhancedMode := viper.GetString("dns.enhanced-mode")
-	dnsListen := viper.GetString("dns.listen")
-	fakeIPRange := viper.GetString("dns.fake-ip-range")
-	interfaceName := viper.GetString("interface-name")
-	autoDetectInterface := viper.GetBool("tun.auto-detect-interface")
-	tunEnabled := viper.GetBool("tun.enable")
-	tunAutoRoute := viper.GetBool("tun.auto-route")
-	tunEBPF := viper.GetStringSlice("ebpf.redirect-to-tun")
-	routingMark := viper.GetInt("routing-mark")
-	metaIPtables := viper.GetBool("iptables.enable")
+type FixData struct {
+	IfName string
+}
 
-	// common check
-	if strings.ToLower(enhancedMode) != "fake-ip" {
-		return nil, fmt.Errorf("[conf] only support fake-ip dns mode(dns.enhanced-mode)")
+func CheckConfig(c string) (*ClashConf, error) {
+	var cc ClashConf
+	if err := yaml.Unmarshal([]byte(c), &cc); err != nil {
+		return nil, fmt.Errorf("[config] failed to unmarshal clash config: %w", err)
 	}
 
-	dnsHost, dnsPort, err := net.SplitHostPort(dnsListen)
+	// common check
+	if strings.ToLower(cc.DNS.EnhancedMode) != "fake-ip" {
+		return nil, fmt.Errorf("[config] only support fake-ip dns mode(dns.enhanced-mode)")
+	}
+
+	dnsHost, dnsPort, err := net.SplitHostPort(cc.DNS.Listen)
 	if err != nil {
-		return nil, fmt.Errorf("[conf] failed to parse clash dns listen config(dns.listen): %v", err)
+		return nil, fmt.Errorf("[config] failed to parse clash dns listen config(dns.listen): %w", err)
 	}
 
 	dport, err := strconv.Atoi(dnsPort)
 	if err != nil {
-		return nil, fmt.Errorf("[conf] failed to parse clash dns listen config(dns.listen): %v", err)
+		return nil, fmt.Errorf("[config] failed to parse clash dns listen config(dns.listen): %w", err)
 	}
 	if dport < 1 {
-		return nil, fmt.Errorf("[conf] dns port in clash config is missing(dns.listen)")
+		return nil, fmt.Errorf("[config] dns port in clash config is missing(dns.listen)")
 	}
 
 	dhost := net.ParseIP(dnsHost)
 	if dhost == nil {
-		return nil, fmt.Errorf("[conf] dns listening address parse failed(dns.listen): is not a valid IP address")
+		return nil, fmt.Errorf("[config] dns listening address parse failed(dns.listen): is not a valid IP address")
 	}
 
-	if interfaceName == "" && !autoDetectInterface {
-		return nil, fmt.Errorf("[conf] failed to parse clash interface name(interface-name): interface-name or tun.auto-detect-interface must be set")
+	if cc.InterfaceName == "" && !cc.Tun.AutoDetectInterface {
+		return nil, fmt.Errorf("[config] failed to parse clash interface name(interface-name): interface-name or tun.auto-detect-interface must be set")
 	}
 
-	if fakeIPRange == "" {
-		return nil, fmt.Errorf("[conf] failed to parse clash fake ip range name(dns.fake-ip-range): fake-ip-range must be set")
+	if cc.DNS.FakeIPRange == "" {
+		return nil, fmt.Errorf("[config] failed to parse clash fake ip range name(dns.fake-ip-range): fake-ip-range must be set")
 	}
 
-	if !tunEnabled {
-		return nil, fmt.Errorf("[conf] tun must be enabled in tun mode(tun.enable)")
+	if !cc.Tun.Enable {
+		return nil, fmt.Errorf("[config] tun must be enabled in tun mode(tun.enable)")
 	}
 
-	if !tunAutoRoute && tunEBPF == nil {
-		return nil, fmt.Errorf("[conf] must be enabled auto-route or ebpf in tun mode(tun.auto-route/ebpf.redirect-to-tun)")
+	if !cc.Tun.AutoRoute && len(cc.Ebpf.RedirectToTun) == 0 {
+		return nil, fmt.Errorf("[config] must be enabled auto-route or ebpf in tun mode(tun.auto-route/ebpf.redirect-to-tun)")
 	}
 
-	if tunAutoRoute && tunEBPF != nil {
-		return nil, fmt.Errorf("[conf] cannot enable auto-route and ebpf at the same time(tun.auto-route/ebpf.redirect-to-tun)")
+	if cc.Tun.AutoRoute && len(cc.Ebpf.RedirectToTun) > 0 {
+		return nil, fmt.Errorf("[config] cannot enable auto-route and ebpf at the same time(tun.auto-route/ebpf.redirect-to-tun)")
 	}
 
-	if tunEBPF != nil && routingMark == 0 {
-		return nil, fmt.Errorf("[conf] ebpf needs to set routing-mark(routing-mark)")
+	if cc.RoutingMark == 0 && len(cc.Ebpf.RedirectToTun) > 0 {
+		return nil, fmt.Errorf("[config] ebpf needs to set routing-mark(routing-mark)")
 	}
 
-	if metaIPtables {
-		return nil, fmt.Errorf("meta kernel must turn off iptables(iptables.enable)")
+	if cc.IPTables.Enable {
+		return nil, fmt.Errorf("[config] meta kernel must turn off iptables(iptables.enable)")
 	}
 
-	return &ClashConf{
-		Debug:         strings.ToLower(debug) == "debug",
-		InterfaceName: interfaceName,
-	}, nil
+	return &cc, nil
+}
+
+func WatchConfig(ctx context.Context, conf *TPClashConf) chan string {
+	buffer := ""
+	updateCh := make(chan string, 3)
+
+	if strings.HasPrefix(conf.ClashConfig, "http://") || strings.HasPrefix(conf.ClashConfig, "https://") {
+		ccStr, err := loadRemoteConfig(conf)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		buffer = ccStr
+		updateCh <- AutoFix(ccStr)
+
+		go func() {
+			tick := time.Tick(conf.CheckInterval)
+			for {
+				select {
+				case <-ctx.Done():
+					close(updateCh)
+					logrus.Warnf("[config] stop config watching...")
+					return
+				case <-tick:
+					ccStr, err = loadRemoteConfig(conf)
+					if err != nil {
+						logrus.Error(err)
+						continue
+					}
+					if ccStr != buffer {
+						buffer = ccStr
+						updateCh <- AutoFix(ccStr)
+					}
+				}
+			}
+		}()
+	} else {
+		ccStr, err := loadLocalConfig(conf)
+		if err != nil {
+			logrus.Fatal(err)
+		}
+		buffer = ccStr
+		updateCh <- AutoFix(ccStr)
+
+		go func() {
+			watcher, err := fsnotify.NewWatcher()
+			if err != nil {
+				logrus.Fatalf("[config] failed to create fs watcher: %v", err)
+			}
+			defer func() { _ = watcher.Close() }()
+
+			if err = watcher.Add(filepath.Dir(conf.ClashConfig)); err != nil {
+				logrus.Fatalf("[config] failed add %s to fs watcher: %v", conf.ClashConfig, err)
+			}
+
+			for {
+				select {
+				case <-ctx.Done():
+					close(updateCh)
+					logrus.Warnf("[config] stop config watching...")
+					return
+				case event, ok := <-watcher.Events:
+					if !ok {
+						return
+					}
+					if event.Name != conf.ClashConfig {
+						continue
+					}
+					if event.Has(fsnotify.Write) {
+						ccStr, err = loadLocalConfig(conf)
+						if err != nil {
+							logrus.Error(err)
+							continue
+						}
+						if ccStr != buffer {
+							buffer = ccStr
+							updateCh <- AutoFix(ccStr)
+						}
+					}
+				case err, ok := <-watcher.Errors:
+					if !ok {
+						return
+					}
+					if err != nil {
+						logrus.Errorf("[config] fs watcher error: %v", err)
+					}
+				}
+			}
+		}()
+	}
+	return updateCh
+}
+
+func loadRemoteConfig(conf *TPClashConf) (string, error) {
+	logrus.Debugf("[config] checking remote config...")
+
+	req, err := http.NewRequest("GET", conf.ClashConfig, nil)
+	if err != nil {
+		return "", fmt.Errorf("[config] failed to create remote config req: %w", err)
+	}
+
+	for _, kv := range conf.HttpHeader {
+		ss := strings.Split(kv, "=")
+		if len(ss) != 2 {
+			return "", fmt.Errorf("[config] failed to parse http header: %s", kv)
+		}
+		req.Header.Set(ss[0], ss[1])
+	}
+
+	cli := &http.Client{Timeout: 10 * time.Second}
+	resp, err := cli.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("[config] failed to download remote config: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if !(resp.StatusCode >= 200 && resp.StatusCode <= 299) {
+		return "", fmt.Errorf("[config] failed to get remote config: status code %d", resp.StatusCode)
+	}
+
+	bs, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("[config] failed to copy resp: %w", err)
+	}
+
+	return string(bs), nil
+}
+
+func loadLocalConfig(conf *TPClashConf) (string, error) {
+	logrus.Debugf("[config] checking local config...")
+
+	bs, err := os.ReadFile(conf.ClashConfig)
+	if err != nil {
+		return "", fmt.Errorf("[config] local config read error: %w", err)
+	}
+	return string(bs), nil
 }

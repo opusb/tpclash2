@@ -8,29 +8,12 @@ const (
 )
 
 const (
-	tableFilter = "filter"
-	tableMangle = "mangle"
-	tableNat    = "nat"
-
-	chainIP4         = "TP_CLASH_V4"
-	chainIP4Local    = "TP_CLASH_LOCAL_V4"
-	chainIP4DNS      = "TP_CLASH_DNS_V4"
-	chainIP4DNSLocal = "TP_CLASH_DNS_LOCAL_V4"
-	chainOutput      = "OUTPUT"
-	chainPreRouting  = "PREROUTING"
-	chainDockerUser  = "DOCKER-USER"
-
-	actionAccept   = "ACCEPT"
-	actionReturn   = "RETURN"
-	actionTProxy   = "TPROXY"
-	actionRedirect = "REDIRECT"
-	actionDNat     = "DNAT"
-	actionMark     = "MARK"
+	ChainDockerUser = "DOCKER-USER" // https://docs.docker.com/network/packet-filtering-firewalls/#docker-on-a-router
 )
 
 const (
-	clashBiName       = "xclash"
-	clashRemoteConfig = "xclash.yaml"
+	InternalClashBinName = "xclash"
+	InternalConfigName   = "xclash.yaml"
 )
 
 const logo = `

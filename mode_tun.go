@@ -13,7 +13,6 @@ import (
 type tunMode struct {
 	nft  *nftables.Conn
 	tpcc *TPClashConf
-	cc   *ClashConf
 }
 
 func (m *tunMode) addMisc() error {
@@ -23,7 +22,7 @@ func (m *tunMode) addMisc() error {
 		return nil
 	}
 	for _, chain := range cs {
-		if chain.Name == chainDockerUser {
+		if chain.Name == ChainDockerUser {
 			m.nft.InsertRule(&nftables.Rule{
 				Table: chain.Table,
 				Chain: chain,
@@ -44,17 +43,17 @@ func (m *tunMode) delMisc() error {
 		return nil
 	}
 	for _, chain := range cs {
-		if chain.Name == chainDockerUser {
+		if chain.Name == ChainDockerUser {
 			rs, err := m.nft.GetRules(chain.Table, chain)
 			if err != nil {
-				return fmt.Errorf("failed to get nftables rules: %v", err)
+				return fmt.Errorf("failed to get nftables rules: %w", err)
 			}
 			for _, rule := range rs {
 				if len(rule.Exprs) == 1 {
 					v, ok := rule.Exprs[0].(*expr.Verdict)
 					if ok && v.Kind == expr.VerdictAccept {
 						if err = m.nft.DelRule(rule); err != nil {
-							return fmt.Errorf("failed to delete nftables rules: %v", err)
+							return fmt.Errorf("failed to delete nftables rules: %w", err)
 						}
 					}
 				}

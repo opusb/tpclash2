@@ -19,7 +19,7 @@ func process(fns ...func() error) error {
 	return nil
 }
 
-func NewProxyMode(cc *ClashConf, tpcc *TPClashConf) (ProxyMode, error) {
+func NewProxyMode(tpcc *TPClashConf) (ProxyMode, error) {
 
 	conn, err := nftables.New()
 	if err != nil {
@@ -29,6 +29,5 @@ func NewProxyMode(cc *ClashConf, tpcc *TPClashConf) (ProxyMode, error) {
 	return &tunMode{
 		nft:  conn,
 		tpcc: tpcc,
-		cc:   cc,
 	}, nil
 }

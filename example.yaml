@@ -63,7 +63,12 @@ profile:
   store-fake-ip: true
 
 # Outbound interface name
-interface-name: ens34
+#interface-name: ens34
+interface-name: {{IfName}}
+
+ebpf:
+  redirect-to-tun:
+    - {{IfName}}
 
 tun:
   enable: true
@@ -73,10 +78,6 @@ tun:
   #   - 8.8.8.8:53
   #   - tcp://8.8.8.8:53
   #auto-route: true
-
-ebpf:
-  redirect-to-tun:
-    - ens34
 
 routing-mark: 666
 
