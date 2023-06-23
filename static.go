@@ -84,10 +84,16 @@ func ExtractFiles(conf *TPClashConf) {
 
 	dirEntries, err := static.ReadDir("static")
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Fatalf("[static] failed to read embed dir: %v", err)
 	}
+
 	err = extract(static, dirEntries, "static", conf.ClashHome)
 	if err != nil {
-		logrus.Fatal(err)
+		logrus.Fatalf("[static] failed to extract embed files: %v", err)
+	}
+
+	err = os.Chmod(filepath.Join(conf.ClashHome, InternalClashBinName), 0755)
+	if err != nil {
+		logrus.Fatalf("[static] failed to update internal clash bin mode: %v", err)
 	}
 }
