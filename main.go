@@ -32,6 +32,7 @@ var rootCmd = &cobra.Command{
 			return
 		}
 
+		var err error
 		if conf.Debug {
 			logrus.SetLevel(logrus.DebugLevel)
 		}
@@ -55,20 +56,20 @@ var rootCmd = &cobra.Command{
 		clashConfStr := <-updateCh
 
 		// Check clash config
-		if _, err := CheckConfig(clashConfStr); err != nil {
+		if _, err = CheckConfig(clashConfStr); err != nil {
 			logrus.Fatal(err)
 		}
 
 		// Copy remote or local clash config file to internal path
 		clashConfPath := filepath.Join(conf.ClashHome, InternalConfigName)
-		ClashUIPath := filepath.Join(conf.ClashHome, conf.ClashUI)
-		clashBinPath := filepath.Join(conf.ClashHome, InternalClashBinName)
-		if err := os.WriteFile(clashConfPath, []byte(clashConfStr), 0644); err != nil {
+		if err = os.WriteFile(clashConfPath, []byte(clashConfStr), 0644); err != nil {
 			logrus.Fatalf("[main] failed to copy clash config: %v", err)
 		}
 
 		// Create child process
-		cmd := exec.Command(clashBinPath, "-f", clashConfPath, "-d", conf.ClashHome, "-ext-ui", ClashUIPath)
+		clashBinPath := filepath.Join(conf.ClashHome, InternalClashBinName)
+		clashUIPath := filepath.Join(conf.ClashHome, conf.ClashUI)
+		cmd := exec.Command(clashBinPath, "-f", clashConfPath, "-d", conf.ClashHome, "-ext-ui", clashUIPath)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.SysProcAttr = &syscall.SysProcAttr{
@@ -76,8 +77,8 @@ var rootCmd = &cobra.Command{
 		}
 		logrus.Infof("[main] running cmds: %v", cmd.Args)
 
-		if err := cmd.Start(); err != nil {
-			logrus.Error(err)
+		if err = cmd.Start(); err != nil {
+			logrus.Fatalf("[main] failed to start clash process: %v: %v", err, cmd.Args)
 			cancel()
 		}
 		if cmd.Process == nil {
@@ -85,13 +86,8 @@ var rootCmd = &cobra.Command{
 			logrus.Fatalf("[main] failed to start clash process: %v", cmd.Args)
 		}
 
-		proxyMode, err := NewProxyMode()
-		if err != nil {
-			logrus.Fatalf("[main] failed to create proxy mode: %v", err)
-		}
-
-		if err := proxyMode.EnableProxy(); err != nil {
-			logrus.Fatalf("[main] failed to enable proxy: %v", err)
+		if err = EnableDockerCompatible(); err != nil {
+			logrus.Errorf("[main] failed enable docker compatible: %v", err)
 		}
 
 		// Watch clash config changes, and automatically reload the config
@@ -101,8 +97,8 @@ var rootCmd = &cobra.Command{
 		<-ctx.Done()
 
 		logrus.Info("[main] 🛑 TPClash 正在停止...")
-		if err := proxyMode.DisableProxy(); err != nil {
-			logrus.Error(err)
+		if err = DisableDockerCompatible(); err != nil {
+			logrus.Errorf("[main] failed disable docker compatible: %v", err)
 		}
 
 		if cmd.Process != nil {

@@ -90,10 +90,4 @@ func ExtractFiles(conf *TPClashConf) {
 	if err != nil {
 		logrus.Fatal(err)
 	}
-
-	//bs, err := exec.Command("chmod", "+x", filepath.Join(conf.ClashHome, "xclash")).CombinedOutput()
-	//if err != nil {
-	//	logrus.Fatalf("[static] failed to change file permission: %s, %v", bs, err)
-	//}
-
 }
