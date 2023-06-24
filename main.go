@@ -102,7 +102,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		if cmd.Process != nil {
-			if err := cmd.Process.Kill(); err != nil {
+			if err := cmd.Process.Signal(syscall.SIGINT); err != nil {
 				logrus.Error(err)
 			}
 		}
