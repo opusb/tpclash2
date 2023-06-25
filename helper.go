@@ -116,7 +116,7 @@ func autoFixIfName() string {
 	return ""
 }
 
-func autoFixDefaultDNS() string {
+func autoFixDefaultDNS() []string {
 	resolvConf := "/run/systemd/resolve/resolv.conf"
 	_, err := os.Stat(resolvConf)
 	if err != nil {
@@ -126,14 +126,18 @@ func autoFixDefaultDNS() string {
 	bs, err := os.ReadFile(resolvConf)
 	if err != nil {
 		logrus.Errorf("[helper/default-dns] failed to read resole.conf: %v", err)
-		return ""
+		return nil
 	}
 
 	regx := regexp.MustCompile(`(?m)^nameserver\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})`)
 	matches := regx.FindAllStringSubmatch(string(bs), -1)
 	if len(matches) == 0 {
 		logrus.Errorf("[helper/default-dns] failed to parse resole.conf: missing nameservers")
-		return ""
+		return nil
 	}
-	return matches[0][1]
+	var servers []string
+	for _, match := range matches {
+		servers = append(servers, match[1])
+	}
+	return servers
 }
