@@ -230,7 +230,8 @@ func WatchConfig(ctx context.Context, conf *TPClashConf) chan string {
 func AutoFix(c string) string {
 	var buf bytes.Buffer
 	tpl, err := template.New("").Funcs(template.FuncMap{
-		"IfName": IfName,
+		"IfName":     autoFixIfName,
+		"DefaultDNS": autoFixDefaultDNS,
 	}).Parse(c)
 
 	if err != nil {
