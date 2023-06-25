@@ -105,8 +105,8 @@ dns:
   # All DNS questions are sent directly to the nameserver, without proxies
   # involved. Clash answers the DNS question with the first result gathered.
   nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
+    {{range $index, $server := DefaultDNS}}- {{$server}}
+    {{end}}
 
 proxies:
   - name: "SOCKS5_XXXXX"
@@ -136,6 +136,7 @@ rules:
   - RULE-SET,gfw,GFW_PROXY
   - RULE-SET,greatfire,GFW_PROXY
   - RULE-SET,telegramcidr,GFW_PROXY
+  - GEOIP,LAN,DIRECT
   - GEOIP,CN,DIRECT
   - MATCH,GFW_PROXY
 

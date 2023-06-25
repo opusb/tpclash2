@@ -229,10 +229,7 @@ func WatchConfig(ctx context.Context, conf *TPClashConf) chan string {
 
 func AutoFix(c string) string {
 	var buf bytes.Buffer
-	tpl, err := template.New("").Funcs(template.FuncMap{
-		"IfName":     autoFixIfName,
-		"DefaultDNS": autoFixDefaultDNS,
-	}).Parse(c)
+	tpl, err := template.New("").Funcs(confFuncsMap).Parse(c)
 
 	if err != nil {
 		logrus.Errorf("[autofix] failed to parse template: %v", err)
