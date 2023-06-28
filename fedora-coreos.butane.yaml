@@ -1,0 +1,150 @@
+variant: fcos
+version: 1.5.0
+passwd:
+  users:
+    - name: root
+      # openssl passwd -6 -salt SALT PASSWORD
+      password_hash: $6$kovacs$.UwiKUJuLYO/.y7Qcxi/owx2H3dSy3GeX9j5NEyglpdWlGjSJZ0ITcN7NJk3yuXeU.MUYzw/sbZmG/tkVQD0j0
+      ssh_authorized_keys:
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMskC9phaoO1WJkQOvXcUxH+DlG8u/2u1ReMXOO9vkbW mritd@linux.com
+storage:
+  links:
+    - path: /etc/localtime
+      target: ../usr/share/zoneinfo/Asia/Shanghai
+  files:
+    - path: /etc/zincati/config.d/51-rollout-wariness.toml
+      contents:
+        inline: |
+          [identity]
+          rollout_wariness = 0.5
+    - path: /etc/systemd/resolved.conf.d/99-fix-clash.conf
+      contents:
+        inline: |
+          [Resolve]
+          DNS=223.5.5.5
+          Domains=~.
+          DNSStubListener=no
+    - path: /etc/zincati/config.d/55-updates-strategy.toml
+      contents:
+        inline: |
+          [updates]
+          strategy = "periodic"
+
+          [updates.periodic]
+          time_zone = "Asia/Shanghai"
+
+          [[updates.periodic.window]]
+          days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+          start_time = "10:30"
+          length_minutes = 60
+    # Set hostname
+    - path: /etc/hostname
+      mode: 0644
+      contents:
+        inline: tpclash
+    # Rename nic
+    - path: /etc/systemd/network/25-tpclash.link
+      mode: 0644
+      contents:
+        inline: |
+          [Match]
+          # Match the first interface found
+          Path=pci-*
+          
+          [Link]
+          # Use the traditional naming scheme
+          Name=tpclash
+    # Set static ip
+    - path: /etc/NetworkManager/system-connections/tpclash.nmconnection
+      mode: 0600
+      contents:
+        inline: |
+          [connection]
+          id=tpclash
+          type=ethernet
+          interface-name=tpclash
+
+          [ipv4]
+          address1=192.168.1.111/24,192.168.1.1
+          dhcp-hostname=tpclash
+          dns=223.5.5.5;119.29.29.29;
+          dns-search=node;lan;local;
+          may-fail=false
+          method=manual
+    # Set vim as default editor
+    # We use `zz-` as prefix to make sure this is processed last in order to
+    # override any previously set defaults.
+    - path: /etc/profile.d/zz-default-editor.sh
+      overwrite: true
+      contents:
+        inline: |
+          export EDITOR=vim
+  directories:
+    - path: /opt/tpclash
+      overwrite: true
+
+systemd:
+  units:
+    # Automate bootupd updates
+    - name: custom-bootupd-auto.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Bootupd automatic update
+
+        [Service]
+        ExecStart=/usr/bin/bootupctl update
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+    # Installing common pkgs as a layered package with rpm-ostree
+    - name: rpm-ostree-install-common-pkgs.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Layer common pkgs with rpm-ostree
+        Wants=network-online.target
+        After=network-online.target
+        # We run before `zincati.service` to avoid conflicting rpm-ostree
+        # transactions.
+        Before=zincati.service
+        ConditionPathExists=!/var/lib/%N.stamp
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        # `--allow-inactive` ensures that rpm-ostree does not return an error
+        # if the package is already installed. This is useful if the package is
+        # added to the root image in a future Fedora CoreOS release as it will
+        # prevent the service from failing.
+        ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive open-vm-tools zsh vim wget nload iftop htop
+        ExecStart=/bin/touch /var/lib/%N.stamp
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: tpclash.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=TPClash
+        After=network-online.target
+        Wants=network-online.target
+
+        [Service]
+        TimeoutStartSec=0
+        ExecStartPre=-/bin/podman kill tpclash
+        ExecStartPre=-/bin/podman rm tpclash
+        ExecStartPre=/bin/podman pull docker.io/mritd/tpclash
+        ExecStart=/bin/podman run --tty \
+                                  --privileged \
+                                  --network host \
+                                  --name tpclash \
+                                  --restart unless-stopped \
+                                  -v /opt/tpclash:/data \
+                                  -v /run:/run \
+                                  docker.io/mritd/tpclash \
+                                    tpclash --config https://example.com/clash.yaml
+
+        [Install]
+        WantedBy=multi-user.target
