@@ -8,6 +8,7 @@
     - [2.5、设置流量转发](#25设置流量转发)
     - [2.6、在 Docker 容器中使用](#26在-docker-容器中使用)
     - [2.7、远程配置加载](#27远程配置加载)
+    - [2.8、容器化虚拟机部署](#28容器化虚拟机部署)
   - [三、TPClash 做了什么](#三tpclash-做了什么)
   - [四、如何编译 TPClash](#四如何编译-tpclash)
   - [五、其他说明](#五其他说明)
@@ -168,6 +169,26 @@ docker run -dt \
 - 3、增加了 `--http-header` 选项用于用于设置下载远程配置的 http 请求头, 用于支持下载公网带认证的托管配置, 例如 `--http-header "Authorization=Basic YWRtaW46MTIz"`
 
 **注意: 如果远程配置修改了端口等配置, 那么仍需要重新启动 TPClash, 因为 TPClash 重载无法照顾到底层的端口变更.**
+
+### 2.8、容器化虚拟机部署
+
+TPClash 一开始的目标就是作为一个稳定可靠的、可以直接托管配置的内网网关使用, 虽然 TPClash 可以兼容大多数系统, 但特殊系统环境例如 OpenWrt 等可能会出现一些兼容性问题;
+为了统一部署环境和更方便使用, 目前已增加了纯容器化系统 Fedora CoreOS 和 Flatcar 系统支持, 这两个系统都支持直接使用单个配置文件完成引导和自动化部署, 且后台自动滚动升级;
+可以持续维持系统的最新状态并且可安全回滚; 以下为两个系统在 ESXi 下的直接部署说明:
+
+- 1、下载项目内的 fedora-coreos.butane.yaml 或 flatcar.butane.yaml
+- 2、调整配置文件内的 IP 地址和网关地址, DNS 一般不需要修改
+- 3、调整配置文件内 TPClash 的启动命令, 一般需要指定远程 clash 配置文件地址
+- 4、参考 [butane](https://coreos.github.io/butane/getting-started/) 官方文档安装 butane 工具
+- 5、执行 `butane --pretty --strict flatcar.butane.yaml | base64 -w0` 生成 base64 编码格式的 Ignition 配置(yaml名称自行替换)
+- 6、下载对应系统的 ova 系统部署文件, Fedora CoreOS [点击这里](https://fedoraproject.org/coreos/download/?stream=stable#baremetal), Flatcar [点击这里](https://stable.release.flatcar-linux.net/amd64-usr/current/flatcar_production_vmware_ova.ova)
+- 7、在 ESXi 内创建虚拟机选择从 `OVA` 部署
+- 8、Fedora CoreOS 部署时 **其他设置/Options** 中 `Ignition config data` 填写第 5 步生成的 base64 字符串, `Ignition config data encoding` 填写 `base64`
+- 9、Flatcar 部署时 **其他设置/Options** 中 `Ignition/coreos-cloudinit data` 填写第 5 步生成的 base64 字符串, `Ignition/coreos-cloudinit data encoding` 填写 `base64`
+- 10、最后启动完成, 一个容器化、不可变的可靠 TPClash 网关就启动了
+
+关于这两个系统以及其配置文件限于篇幅无法做过多说明, 推荐阅读以下官方文档, 如有其他需要帮助或疑问请开 issue.
+
 
 ## 三、TPClash 做了什么
 
