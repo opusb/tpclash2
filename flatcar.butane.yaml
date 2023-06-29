@@ -50,7 +50,7 @@ storage:
           # Use the traditional naming scheme
           Name=tpclash
     # Set static ip
-    - path: /etc/systemd/network/00-vmware.network
+    - path: /etc/systemd/network/00-tpclash.network
       contents:
         inline: |
           [Match]
