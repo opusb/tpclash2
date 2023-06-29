@@ -1,0 +1,108 @@
+variant: flatcar
+version: 1.0.0
+kernel_arguments:
+  should_not_exist:
+    - flatcar.autologin
+passwd:
+  users:
+    - name: root
+      # openssl passwd -6 -salt SALT PASSWORD
+      password_hash: $6$kovacs$.UwiKUJuLYO/.y7Qcxi/owx2H3dSy3GeX9j5NEyglpdWlGjSJZ0ITcN7NJk3yuXeU.MUYzw/sbZmG/tkVQD0j0
+      ssh_authorized_keys:
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMskC9phaoO1WJkQOvXcUxH+DlG8u/2u1ReMXOO9vkbW mritd@linux.com
+storage:
+  links:
+    - path: /etc/localtime
+      target: ../usr/share/zoneinfo/Asia/Shanghai
+  files:
+    # Update policy
+    - path: /etc/flatcar/update.conf
+      mode: 0420
+      contents:
+        inline: |
+          REBOOT_STRATEGY=reboot
+          LOCKSMITHD_REBOOT_WINDOW_START=10:30
+          LOCKSMITHD_REBOOT_WINDOW_LENGTH=1h          
+    # Fix clash `tun.auto-route`
+    - path: /etc/systemd/resolved.conf.d/99-fix-clash.conf
+      contents:
+        inline: |
+          [Resolve]
+          DNS=223.5.5.5
+          DNS=119.29.29.29
+          Domains=~.
+          DNSStubListener=no
+    # Set hostname
+    - path: /etc/hostname
+      mode: 0644
+      contents:
+        inline: tpclash
+    # Rename nic
+    - path: /etc/systemd/network/25-tpclash.link
+      mode: 0644
+      contents:
+        inline: |
+          [Match]
+          # Match the first interface found
+          Path=pci-*
+          
+          [Link]
+          # Use the traditional naming scheme
+          Name=tpclash
+    # Set static ip
+    - path: /etc/systemd/network/00-vmware.network
+      contents:
+        inline: |
+          [Match]
+          Name=tpclash
+
+          [Network]
+          DHCP=no
+          NTP=time.windows.com time.apple.com
+
+          [Address]
+          Address=192.168.1.111
+
+          [Route]
+          Destination=0.0.0.0/0
+          Gateway=192.168.1.1
+    # Set vim as default editor
+    # We use `zz-` as prefix to make sure this is processed last in order to
+    # override any previously set defaults.
+    - path: /etc/profile.d/zz-default-editor.sh
+      overwrite: true
+      contents:
+        inline: |
+          export EDITOR=vim
+
+  directories:
+    # Create clash storage dir
+    - path: /opt/tpclash
+      overwrite: true
+
+systemd:
+  units:
+    - name: tpclash.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=TPClash
+        After=network-online.target
+        Wants=network-online.target
+
+        [Service]
+        TimeoutStartSec=0
+        ExecStartPre=-/usr/bin/docker rm -f tpclash
+        ExecStartPre=/usr/bin/docker pull mritd/tpclash
+        ExecStart=/usr/bin/docker run --tty \
+                                  --privileged \
+                                  --network host \
+                                  --name tpclash \
+                                  --restart unless-stopped \
+                                  -v /opt/tpclash:/data \
+                                  -v /run:/run \
+                                  mritd/tpclash \
+                                    tpclash --config https://example.com/clash.yaml
+
+        [Install]
+        WantedBy=multi-user.target
