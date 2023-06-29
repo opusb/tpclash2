@@ -12,6 +12,7 @@
   - [三、TPClash 做了什么](#三tpclash-做了什么)
   - [四、如何编译 TPClash](#四如何编译-tpclash)
   - [五、其他说明](#五其他说明)
+  - [六、官方讨论群](#六官方讨论群)
 
 # Transparent proxy tool for Clash
 
@@ -231,3 +232,7 @@ TPClash 默认释放的文件包含了 [Loyalsoldier/clash-rules](https://github
 
 **TPClash 同时也释放了 [Hackl0us/GeoIP2-CN](https://github.com/Hackl0us/GeoIP2-CN) 项目的 Country.mmdb 文件, 该 GeoIP 数据库
 仅包含中国大陆地区 IP, 所以如果使用 `GEOIP,US,PROXY` 等其他国家规则会失败.**
+
+## 六、官方讨论群
+
+Telegram: [https://t.me/tpclash](https://t.me/tpclash)
