@@ -22,6 +22,7 @@ storage:
         inline: |
           [Resolve]
           DNS=223.5.5.5
+          DNS=119.29.29.29
           Domains=~.
           DNSStubListener=no
     - path: /etc/zincati/config.d/55-updates-strategy.toml
@@ -63,12 +64,10 @@ storage:
           id=tpclash
           type=ethernet
           interface-name=tpclash
-
+ 
           [ipv4]
-          address1=192.168.1.111/24,192.168.1.1
-          dhcp-hostname=tpclash
-          dns=223.5.5.5;119.29.29.29;
-          dns-search=node;lan;local;
+          address1=192.168.1.111/24
+          gateway=192.168.1.1
           may-fail=false
           method=manual
     # Set vim as default editor
@@ -118,7 +117,7 @@ systemd:
         # if the package is already installed. This is useful if the package is
         # added to the root image in a future Fedora CoreOS release as it will
         # prevent the service from failing.
-        ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive open-vm-tools zsh vim wget nload iftop htop
+        ExecStart=/usr/bin/rpm-ostree install --apply-live --allow-inactive open-vm-tools vim
         ExecStart=/bin/touch /var/lib/%N.stamp
 
         [Install]
@@ -133,8 +132,7 @@ systemd:
 
         [Service]
         TimeoutStartSec=0
-        ExecStartPre=-/bin/podman kill tpclash
-        ExecStartPre=-/bin/podman rm tpclash
+        ExecStartPre=-/bin/podman rm -f tpclash
         ExecStartPre=/bin/podman pull docker.io/mritd/tpclash
         ExecStart=/bin/podman run --tty \
                                   --privileged \
