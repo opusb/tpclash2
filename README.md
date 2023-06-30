@@ -139,9 +139,8 @@ iptables:
 
 ### 2.5、设置流量转发
 
-TPClash 启动成功后, 将其他主机的网关指向当前 TPClash 服务器 IP 即可实现透明代理;
-对于其他主机请使用默认路由器 IP 或者类似 114 等公共 DNS 作为主机 DNS.
-**请不要将其他主机的 DNS 也设置为 TPClash 服务器 IP, 因为当前 Clash 可能并未监听 53 端口.**
+TPClash 启动成功后, 将其他主机的网关指向当前 TPClash 服务器 IP 即可实现透明代理; 对于被代理主机请使用公网 DNS.
+**请不要将其他主机的 DNS 也设置为 TPClash 服务器 IP, 因为这回导致一些不可预测的问题, 具体请参考 [Clash DNS 科普](https://github.com/mritd/tpclash/wiki/Clash-DNS-%E7%A7%91%E6%99%AE).**
 
 ### 2.6、在 Docker 容器中使用
 
