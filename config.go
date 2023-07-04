@@ -311,6 +311,8 @@ func loadRemoteConfig(conf *TPClashConf) (string, error) {
 		req.Header.Set(ss[0], ss[1])
 	}
 
+	req.Header.Set("User-Agent", fmt.Sprintf("TPClash %s %s", version, commit))
+
 	cli := &http.Client{Timeout: conf.HttpTimeout}
 	resp, err := cli.Do(req)
 	if err != nil {
