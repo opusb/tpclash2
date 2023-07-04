@@ -1,20 +1,30 @@
 variant: flatcar
 version: 1.0.0
+
+# 关闭控制台默认登陆
 kernel_arguments:
   should_not_exist:
     - flatcar.autologin
+
+# 设置 root 用户密码
 passwd:
   users:
     - name: root
+      # 默认密码为 tpclash, 可以使用以下命令重新生成密码 hash
       # openssl passwd -6 -salt SALT PASSWORD
       password_hash: $6$kovacs$.UwiKUJuLYO/.y7Qcxi/owx2H3dSy3GeX9j5NEyglpdWlGjSJZ0ITcN7NJk3yuXeU.MUYzw/sbZmG/tkVQD0j0
+      # ssh-key 登陆配置
       ssh_authorized_keys:
         - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMskC9phaoO1WJkQOvXcUxH+DlG8u/2u1ReMXOO9vkbW mritd@linux.com
 storage:
+  # 默认时区设置为上海
   links:
     - path: /etc/localtime
       target: ../usr/share/zoneinfo/Asia/Shanghai
   files:
+    # 自动更新策略:
+    #   如果有系统更新则每天上午 10:30 进行重启更新, 更新窗口期不得超过 1h 
+    #
     # Update policy
     - path: /etc/flatcar/update.conf
       mode: 0420
@@ -23,8 +33,9 @@ storage:
           REBOOT_STRATEGY=reboot
           LOCKSMITHD_REBOOT_WINDOW_START=10:30
           LOCKSMITHD_REBOOT_WINDOW_LENGTH=1h          
-    # Fix clash `tun.auto-route`
-    - path: /etc/systemd/resolved.conf.d/99-fix-clash.conf
+    # 设置上游 DNS, 并关闭 systemd-resolved 的 53 端口监听, 同时修复本地 DNS 不走 Clash 的问题
+    # Fix clash `tun.auto-route`, ref: https://github.com/Dreamacro/clash/issues/2671
+    - path: /etc/systemd/resolved.conf.d/25-xnet.conf
       contents:
         inline: |
           [Resolve]
@@ -38,7 +49,7 @@ storage:
       contents:
         inline: tpclash
     # Rename nic
-    - path: /etc/systemd/network/25-tpclash.link
+    - path: /etc/systemd/network/25-xnet.link
       mode: 0644
       contents:
         inline: |
@@ -48,13 +59,14 @@ storage:
           
           [Link]
           # Use the traditional naming scheme
-          Name=tpclash
+          Name=xnet
+    # 设置静态 IP 地址
     # Set static ip
-    - path: /etc/systemd/network/00-tpclash.network
+    - path: /etc/systemd/network/00-xnet.network
       contents:
         inline: |
           [Match]
-          Name=tpclash
+          Name=xnet
 
           [Network]
           DHCP=no
@@ -66,15 +78,6 @@ storage:
           [Route]
           Destination=0.0.0.0/0
           Gateway=192.168.1.1
-    # Set vim as default editor
-    # We use `zz-` as prefix to make sure this is processed last in order to
-    # override any previously set defaults.
-    - path: /etc/profile.d/zz-default-editor.sh
-      overwrite: true
-      contents:
-        inline: |
-          export EDITOR=vim
-
   directories:
     # Create clash storage dir
     - path: /opt/tpclash
@@ -82,6 +85,7 @@ storage:
 
 systemd:
   units:
+    # 请自行调整 tpclash 命令
     - name: tpclash.service
       enabled: true
       contents: |
