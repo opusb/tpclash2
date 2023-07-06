@@ -33,16 +33,6 @@ storage:
           REBOOT_STRATEGY=reboot
           LOCKSMITHD_REBOOT_WINDOW_START=10:30
           LOCKSMITHD_REBOOT_WINDOW_LENGTH=1h          
-    # 设置上游 DNS, 并关闭 systemd-resolved 的 53 端口监听, 同时修复本地 DNS 不走 Clash 的问题
-    # Fix clash `tun.auto-route`, ref: https://github.com/Dreamacro/clash/issues/2671
-    - path: /etc/systemd/resolved.conf.d/25-xnet.conf
-      contents:
-        inline: |
-          [Resolve]
-          DNS=223.5.5.5
-          DNS=119.29.29.29
-          Domains=~.
-          DNSStubListener=no
     # Set hostname
     - path: /etc/hostname
       mode: 0644
@@ -73,11 +63,21 @@ storage:
           NTP=time.windows.com time.apple.com
 
           [Address]
-          Address=192.168.1.111
+          Address=192.168.1.111/24
 
           [Route]
           Destination=0.0.0.0/0
           Gateway=192.168.1.1
+    # 设置上游 DNS, 并关闭 systemd-resolved 的 53 端口监听, 同时修复本地 DNS 不走 Clash 的问题
+    # Fix clash `tun.auto-route`, ref: https://github.com/Dreamacro/clash/issues/2671
+    - path: /etc/systemd/resolved.conf.d/25-xnet.conf
+      contents:
+        inline: |
+          [Resolve]
+          DNS=223.5.5.5
+          DNS=119.29.29.29
+          Domains=~.
+          DNSStubListener=no
   directories:
     # Create clash storage dir
     - path: /opt/tpclash
