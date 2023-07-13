@@ -38,25 +38,13 @@ storage:
       mode: 0644
       contents:
         inline: tpclash
-    # Rename nic
-    - path: /etc/systemd/network/25-xnet.link
-      mode: 0644
-      contents:
-        inline: |
-          [Match]
-          # Match the first interface found
-          Path=pci-*
-          
-          [Link]
-          # Use the traditional naming scheme
-          Name=xnet
     # 设置静态 IP 地址
     # Set static ip
     - path: /etc/systemd/network/00-xnet.network
       contents:
         inline: |
           [Match]
-          Name=xnet
+          Name=en*
 
           [Network]
           DHCP=no
@@ -96,13 +84,13 @@ systemd:
 
         [Service]
         TimeoutStartSec=0
-        ExecStartPre=-/usr/bin/docker rm -f tpclash
+        ExecStartPre=-/usr/bin/docker stop tpclash
+        ExecStartPre=-/usr/bin/docker rm tpclash
         ExecStartPre=/usr/bin/docker pull mritd/tpclash
         ExecStart=/usr/bin/docker run --tty \
                                   --privileged \
                                   --network host \
                                   --name tpclash \
-                                  --restart unless-stopped \
                                   -v /opt/tpclash:/data \
                                   -v /run:/run \
                                   mritd/tpclash \
