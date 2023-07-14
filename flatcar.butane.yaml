@@ -1,30 +1,20 @@
 variant: flatcar
 version: 1.0.0
-
-# 关闭控制台默认登陆
 kernel_arguments:
   should_not_exist:
     - flatcar.autologin
-
-# 设置 root 用户密码
 passwd:
   users:
     - name: root
-      # 默认密码为 tpclash, 可以使用以下命令重新生成密码 hash
       # openssl passwd -6 -salt SALT PASSWORD
       password_hash: $6$kovacs$.UwiKUJuLYO/.y7Qcxi/owx2H3dSy3GeX9j5NEyglpdWlGjSJZ0ITcN7NJk3yuXeU.MUYzw/sbZmG/tkVQD0j0
-      # ssh-key 登陆配置
       ssh_authorized_keys:
         - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMskC9phaoO1WJkQOvXcUxH+DlG8u/2u1ReMXOO9vkbW mritd@linux.com
 storage:
-  # 默认时区设置为上海
   links:
     - path: /etc/localtime
       target: ../usr/share/zoneinfo/Asia/Shanghai
   files:
-    # 自动更新策略:
-    #   如果有系统更新则每天上午 10:30 进行重启更新, 更新窗口期不得超过 1h 
-    #
     # Update policy
     - path: /etc/flatcar/update.conf
       mode: 0420
@@ -38,9 +28,8 @@ storage:
       mode: 0644
       contents:
         inline: tpclash
-    # 设置静态 IP 地址
     # Set static ip
-    - path: /etc/systemd/network/00-xnet.network
+    - path: /etc/systemd/network/25-xnet.network
       contents:
         inline: |
           [Match]
@@ -51,13 +40,12 @@ storage:
           NTP=time.windows.com time.apple.com
 
           [Address]
-          Address=192.168.1.111/24
+          Address=192.168.1.11/24
 
           [Route]
           Destination=0.0.0.0/0
           Gateway=192.168.1.1
-    # 设置上游 DNS, 并关闭 systemd-resolved 的 53 端口监听, 同时修复本地 DNS 不走 Clash 的问题
-    # Fix clash `tun.auto-route`, ref: https://github.com/Dreamacro/clash/issues/2671
+    # Fix clash `tun.auto-route`
     - path: /etc/systemd/resolved.conf.d/25-xnet.conf
       contents:
         inline: |
@@ -66,19 +54,14 @@ storage:
           DNS=119.29.29.29
           Domains=~.
           DNSStubListener=no
-  directories:
-    # Create clash storage dir
-    - path: /opt/tpclash
-      overwrite: true
 
 systemd:
   units:
-    # 请自行调整 tpclash 命令
     - name: tpclash.service
       enabled: true
       contents: |
         [Unit]
-        Description=TPClash
+        Description=Transparent proxy tool for Clash
         After=network-online.target
         Wants=network-online.target
 
@@ -91,10 +74,29 @@ systemd:
                                   --privileged \
                                   --network host \
                                   --name tpclash \
-                                  -v /opt/tpclash:/data \
+                                  -v /data:/data \
                                   -v /run:/run \
-                                  mritd/tpclash \
-                                    tpclash --config https://example.com/clash.yaml
+                                    mritd/tpclash tpclash \
+                                      --config https://example.com/clash.yaml
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: watchtower.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=A container-based solution for automating Docker container base image updates.
+        After=network-online.target
+        Wants=network-online.target
+
+        [Service]
+        ExecStartPre=-/usr/bin/docker rm -f watchtower
+        ExecStartPre=/usr/bin/docker pull containrrr/watchtower
+        ExecStart=/usr/bin/docker run --tty \
+                                  --name watchtower \
+                                  -v /var/run/docker.sock:/var/run/docker.sock \
+                                    containrrr/watchtower --cleanup --interval 3600
 
         [Install]
         WantedBy=multi-user.target
