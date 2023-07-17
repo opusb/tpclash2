@@ -94,6 +94,13 @@ var rootCmd = &cobra.Command{
 		go AutoReload(updateCh, clashConfPath)
 
 		logrus.Info("[main] 🍄 提莫队长正在待命...")
+		if conf.Test {
+			logrus.Warn("[main] test mode enabled, tpclash will automatically exit after 5 minutes...")
+			go func() {
+				<-time.After(5 * time.Minute)
+				cancel()
+			}()
+		}
 		<-ctx.Done()
 
 		logrus.Info("[main] 🛑 TPClash 正在停止...")
@@ -115,6 +122,7 @@ func init() {
 	cobra.EnableCommandSorting = false
 
 	rootCmd.PersistentFlags().BoolVar(&conf.Debug, "debug", false, "enable debug log")
+	rootCmd.PersistentFlags().BoolVar(&conf.Test, "test", false, "enable test mode, tpclash will automatically exit after 5 minutes")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashHome, "home", "d", "/data/clash", "clash home dir")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashConfig, "config", "c", "/etc/clash.yaml", "clash config local path or remote url")
 	rootCmd.PersistentFlags().StringVarP(&conf.ClashUI, "ui", "u", "yacd", "clash dashboard(official|yacd)")

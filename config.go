@@ -32,6 +32,7 @@ type TPClashConf struct {
 	DisableExtract bool
 	PrintVersion   bool
 
+	Test  bool
 	Debug bool
 }
 
