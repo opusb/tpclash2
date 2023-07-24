@@ -62,10 +62,13 @@ dns:
   enable: true
   listen: 0.0.0.0:1053
   enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
   default-nameserver:
-    - 114.114.114.114
+    - 223.5.5.5
+    - 119.29.29.29
   nameserver:
-    - 114.114.114.114
+    - 223.5.5.5
+    - 119.29.29.29
 ```
 
 ### 2.2、TUN 配合 eBPF 配置
@@ -97,10 +100,13 @@ dns:
   enable: true
   listen: 0.0.0.0:1053
   enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
   default-nameserver:
-    - 114.114.114.114
+    - 223.5.5.5
+    - 119.29.29.29
   nameserver:
-    - 114.114.114.114
+    - 223.5.5.5
+    - 119.29.29.29
 ```
 
 ### 2.3、启动 TPClash
