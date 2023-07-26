@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"io"
 	"net"
@@ -14,6 +15,8 @@ import (
 	"text/template"
 	"time"
 
+	"golang.org/x/crypto/chacha20poly1305"
+
 	"gopkg.in/yaml.v3"
 
 	"github.com/fsnotify/fsnotify"
@@ -22,12 +25,13 @@ import (
 )
 
 type TPClashConf struct {
-	ClashHome     string
-	ClashConfig   string
-	ClashUI       string
-	HttpHeader    []string
-	HttpTimeout   time.Duration
-	CheckInterval time.Duration
+	ClashHome         string
+	ClashConfig       string
+	ClashUI           string
+	HttpHeader        []string
+	HttpTimeout       time.Duration
+	CheckInterval     time.Duration
+	ConfigEncPassword string
 
 	DisableExtract bool
 	PrintVersion   bool
@@ -296,6 +300,20 @@ func AutoReload(updateCh chan string, writePath string) {
 	}
 }
 
+func Encrypt(plaintext []byte, password string) []byte {
+	key := sha256.Sum256([]byte(password))
+	aead, _ := chacha20poly1305.NewX(key[:])
+
+	return aead.Seal(nil, make([]byte, aead.NonceSize()), plaintext, nil)
+}
+
+func Decrypt(ciphertext []byte, password string) ([]byte, error) {
+	key := sha256.Sum256([]byte(password))
+	aead, _ := chacha20poly1305.NewX(key[:])
+
+	return aead.Open(nil, make([]byte, aead.NonceSize()), ciphertext, nil)
+}
+
 func loadRemoteConfig(conf *TPClashConf) (string, error) {
 	logrus.Debugf("[config] checking remote config...")
 
@@ -330,6 +348,11 @@ func loadRemoteConfig(conf *TPClashConf) (string, error) {
 		return "", fmt.Errorf("[config] failed to copy resp: %w", err)
 	}
 
+	if conf.ConfigEncPassword != "" {
+		plaintext, err := Decrypt(bs, conf.ConfigEncPassword)
+		return string(plaintext), err
+	}
+
 	return string(bs), nil
 }
 
@@ -340,5 +363,11 @@ func loadLocalConfig(conf *TPClashConf) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("[config] local config read error: %w", err)
 	}
+
+	if conf.ConfigEncPassword != "" {
+		plaintext, err := Decrypt(bs, conf.ConfigEncPassword)
+		return string(plaintext), err
+	}
+
 	return string(bs), nil
 }
