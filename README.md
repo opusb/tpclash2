@@ -223,6 +223,15 @@ TPClash 将会自动完成解密并加载:**
 ./tpclash --config-password YOUR_PASSWORD -c https://exmaple.com/clash.yaml.enc
 ```
 
+### 4.3、使用模版引擎
+
+为了应对单配置文件多实例的部署情况, TPClash 内置了一些模版函数, 这些函数可以辅助配置生成完成自动化配置:
+
+- `{{IfName}}`: 自动解析为当前主机的主网卡
+- `{{DefaultDNS}}`: 自动获取当前主机默认的上游 DNS
+
+模版函数可能随后续更新继续添加, 使用方法请参考项目内的 [example.yaml](https://github.com/mritd/tpclash/blob/master/example.yaml) 配置.
+
 
 ## 五、TPClash 做了什么
 
