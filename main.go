@@ -180,6 +180,10 @@ var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install TPClash",
 	Run: func(cmd *cobra.Command, args []string) {
+		var reinstall bool
+		_, err := os.Stat(filepath.Join(systemdDir, "tpclash.service"))
+		reinstall = err == nil
+
 		exePath, err := os.Executable()
 		if err != nil {
 			logrus.Fatalf("[install] unable to get executable file path: %v", err)
@@ -225,7 +229,7 @@ var installCmd = &cobra.Command{
 		}
 		if len(conf.HttpHeader) > 0 {
 			for _, h := range conf.HttpHeader {
-				opts += fmt.Sprintf(" %s %s", "--http-header", h)
+				opts += fmt.Sprintf(" %s '%s'", "--http-header", h)
 			}
 		}
 		if conf.ConfigEncPassword != "" {
@@ -241,6 +245,9 @@ var installCmd = &cobra.Command{
 		}
 
 		fmt.Print(installedMessage)
+		if reinstall {
+			fmt.Print(reinstallMessage)
+		}
 	},
 }
 
