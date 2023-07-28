@@ -47,6 +47,14 @@ const (
 	systemdDir = "/etc/systemd/system"
 )
 
+const (
+	tracingNetworkName = "tpclash-tracing"
+	lokiHostname       = "tpclash-loki"
+	vectorHostname     = "tpclash-vector"
+
+	lokiImage = "grafana/loki:2.8.0"
+)
+
 const installedMessage = logo + `  👌 TPClash 安装完成, 您可以使用以下命令启动:
      - 启动服务: systemctl start tpclash
      - 停止服务: systemctl stop tpclash
