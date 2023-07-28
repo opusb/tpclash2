@@ -180,8 +180,13 @@ var installCmd = &cobra.Command{
 	Use:   "install",
 	Short: "Install TPClash",
 	Run: func(cmd *cobra.Command, args []string) {
+		_, err := exec.LookPath("systemctl")
+		if err != nil {
+			logrus.Fatal("[install] the systemctl command was not found, your system may not be based on systemd")
+		}
+
 		var reinstall bool
-		_, err := os.Stat(filepath.Join(systemdDir, "tpclash.service"))
+		_, err = os.Stat(filepath.Join(systemdDir, "tpclash.service"))
 		reinstall = err == nil
 
 		exePath, err := os.Executable()
