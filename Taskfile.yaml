@@ -64,6 +64,13 @@ tasks:
     status:
       - test -f static/Country.mmdb
 
+  copy-tracing:
+    desc: Copy Tracing Dashboard Config
+    cmds:
+      - cp -r tracing static/tracing
+    status:
+      - test -f static/tracing
+
   build-premium-dashboard:
     desc: Build Clash Premium Dashboard
     cmds:
@@ -139,6 +146,7 @@ tasks:
       - task: mkdir
       - task: download-ruleset
       - task: download-mmdb
+      - task: copy-tracing
       - task: build-premium-dashboard
       - task: download-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
@@ -161,6 +169,7 @@ tasks:
       - task: mkdir
       - task: download-ruleset
       - task: download-mmdb
+      - task: copy-tracing
       - task: build-meta-dashboard
       - task: download-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }

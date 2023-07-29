@@ -10,11 +10,13 @@ import (
 )
 
 var confFuncsMap = template.FuncMap{
-	"IfName":     tplIfName,
+	"IfName":     tplMainNic,
+	"MainNic":    tplMainNic,
+	"MainIP":     tplMainIP,
 	"DefaultDNS": tplDefaultDNS,
 }
 
-func tplIfName() string {
+func tplMainNic() string {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		logrus.Errorf("[helper/if-name] failed to list network interfaces: %v", err)
@@ -32,6 +34,34 @@ func tplIfName() string {
 				if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
 					if ipnet.IP.To4() != nil {
 						return iface.Name
+					}
+				}
+			}
+		}
+	}
+
+	logrus.Error("[helper/if-name] failed to get main interface")
+	return ""
+}
+
+func tplMainIP() string {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		logrus.Errorf("[helper/if-name] failed to list network interfaces: %v", err)
+		return ""
+	}
+
+	for _, iface := range ifaces {
+		if iface.Flags&net.FlagLoopback == 0 && iface.Flags&net.FlagUp != 0 {
+			addrs, err := iface.Addrs()
+			if err != nil {
+				logrus.Errorf("[helper/if-name] failed to get addrs: %v", err)
+				return ""
+			}
+			for _, addr := range addrs {
+				if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+					if ipnet.IP.To4() != nil {
+						return ipnet.IP.To4().String()
 					}
 				}
 			}

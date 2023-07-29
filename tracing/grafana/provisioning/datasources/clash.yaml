@@ -1,0 +1,20 @@
+apiVersion: 1
+
+# list of datasources to insert/update depending
+# what's available in the database
+datasources:
+  # <string, required> name of the datasource. Required
+  - name: Loki
+    # <string, required> datasource type. Required
+    type: loki
+    # <string, required> access mode. proxy or direct (Server or Browser in the UI). Required
+    access: proxy
+    # <int> org id. will default to orgId 1 if not specified
+    orgId: 1
+    # <string> url
+    url: http://tplcash-loki:3100
+    isDefault: true
+    # <bool> allow users to edit datasources from the UI.
+    editable: true
+    jsonData:
+      maxLines: 1000

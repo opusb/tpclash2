@@ -58,7 +58,8 @@ var rootCmd = &cobra.Command{
 		clashConfStr := <-updateCh
 
 		// Check clash config
-		if _, err = CheckConfig(clashConfStr); err != nil {
+		cc, err := CheckConfig(clashConfStr)
+		if err != nil {
 			logrus.Fatal(err)
 		}
 
@@ -103,11 +104,29 @@ var rootCmd = &cobra.Command{
 				cancel()
 			}()
 		}
-		<-ctx.Done()
+
+		var containerMap map[string]string
+		if conf.EnableTracing {
+			logrus.Infof("[main] 🔪 tracing enabled, starting tracing project...")
+			containerMap, err = startTracing(ctx, conf, cc)
+			if err != nil {
+				logrus.Errorf("[main] ❌ tracing project deploy failed: %v", err)
+			}
+		}
 
 		logrus.Info("[main] 🛑 TPClash 正在停止...")
 		if err = DisableDockerCompatible(); err != nil {
 			logrus.Errorf("[main] failed disable docker compatible: %v", err)
+		}
+
+		if conf.EnableTracing && containerMap != nil {
+			tracingStopCtx, tracingStopCancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer tracingStopCancel()
+
+			err = stopTracing(tracingStopCtx, containerMap)
+			if err != nil {
+				logrus.Errorf("[main] ❌ tracing project stop failed: %v", err)
+			}
 		}
 
 		if cmd.Process != nil {
@@ -294,6 +313,7 @@ func init() {
 	rootCmd.PersistentFlags().DurationVar(&conf.HttpTimeout, "http-timeout", 10*time.Second, "http request timeout when requesting a remote config")
 	rootCmd.PersistentFlags().StringVar(&conf.ConfigEncPassword, "config-password", "", "the password for encrypting the config file")
 	rootCmd.PersistentFlags().BoolVar(&conf.DisableExtract, "disable-extract", false, "disable extract files")
+	rootCmd.PersistentFlags().BoolVar(&conf.EnableTracing, "enable-tracing", false, "auto deploy tracing dashboard")
 	rootCmd.PersistentFlags().BoolVarP(&conf.PrintVersion, "version", "v", false, "version for tpclash")
 }
 

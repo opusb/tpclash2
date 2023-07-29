@@ -34,6 +34,7 @@ type TPClashConf struct {
 	ConfigEncPassword string
 
 	DisableExtract bool
+	EnableTracing  bool
 	PrintVersion   bool
 
 	Test  bool

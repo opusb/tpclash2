@@ -49,10 +49,18 @@ const (
 
 const (
 	tracingNetworkName = "tpclash-tracing"
-	lokiHostname       = "tpclash-loki"
-	vectorHostname     = "tpclash-vector"
 
-	lokiImage = "grafana/loki:2.8.0"
+	lokiImage           = "grafana/loki:2.8.0"
+	vectorImage         = "timberio/vector:0.X-alpine"
+	trafficScraperImage = "vi0oss/websocat:0.10.0"
+	tracingScraperImage = "vi0oss/websocat:0.10.0"
+	grafanaImage        = "grafana/grafana-oss:latest"
+
+	lokiContainerName           = "tpclash-loki"
+	vectorContainerName         = "tpclash-vector"
+	trafficScraperContainerName = "tpclash-traffic-scraper"
+	tracingScraperContainerName = "tpclash-tracing-scraper"
+	grafanaContainerName        = "tpclash-grafana"
 )
 
 const installedMessage = logo + `  👌 TPClash 安装完成, 您可以使用以下命令启动:

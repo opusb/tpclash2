@@ -1,0 +1,50 @@
+log_schema.host_key = "reportNode"
+
+[sources.mixed]
+type = "socket"
+address = "0.0.0.0:9000"
+mode = "tcp"
+decoding.codec = "json"
+
+[transforms.traffic-input]
+type = "filter"
+inputs = [ "mixed" ]
+condition = "exists(.up)"
+
+[transforms.tracing-input]
+type = "filter"
+inputs = [ "mixed" ]
+condition = "!exists(.up)"
+
+[transforms.traffic]
+type = "remap"
+inputs = [ "traffic-input" ]
+source = """
+.type = "traffic"
+del(.source_type)"""
+
+[transforms.tracing]
+type = "remap"
+inputs = [ "tracing-input" ]
+source = """
+.type = downcase!(.type)
+del(.source_type)
+if exists(.metadata) {
+    .metadata_dstip = .metadata.destinationIP
+    .metadata_dstport = .metadata.destinationPort
+    .metadata_host = .metadata.host
+    .metadata_network = .metadata.network
+    .metadata_srcip = .metadata.sourceIP
+    .metadata_srcport = .metadata.sourcePort
+    .metadata_type = .metadata.type
+    .metadata_dnsmode = .metadata.dnsMode
+    del(.metadata)
+}
+"""
+
+[sinks.loki]
+type = "loki"
+inputs = [ "traffic", "tracing" ]
+endpoint = "http://tpclash-loki:3100"
+encoding.codec = "json"
+labels.type = "{{ type }}"
