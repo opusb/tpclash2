@@ -81,7 +81,7 @@ tun:
   auto-redir: true
   auto-detect-interface: true
 
-routing-mark: 666
+#routing-mark: 666
 
 # DNS server settings
 # This section is optional. When not present, the DNS server will be disabled.
