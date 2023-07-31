@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/sirupsen/logrus"
 
 	"github.com/docker/docker/api/types/strslice"
@@ -23,21 +25,182 @@ import (
 	"github.com/docker/docker/client"
 )
 
+type TracingConfig struct {
+	NetworkConfig   *network.NetworkingConfig
+	HostConfig      *container.HostConfig
+	ContainerConfig *container.Config
+}
+
+func newLokiConfig(logConfig container.LogConfig, restartPolicy container.RestartPolicy) (*TracingConfig, error) {
+	lokiDataDir := filepath.Join(conf.ClashHome, "tracing/loki/data")
+	stat, err := os.Stat(lokiDataDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			if err = os.MkdirAll(lokiDataDir, 0755); err != nil {
+				return nil, fmt.Errorf("[tracing] failed to create loki data dir: %w", err)
+			}
+		}
+	}
+	if stat != nil && !stat.IsDir() {
+		return nil, errors.New("[tracing] the loki data directory location already exists, but is not a directory")
+	}
+
+	return &TracingConfig{
+		ContainerConfig: &container.Config{
+			User:     "root",
+			Image:    lokiImage,
+			Hostname: lokiContainerName,
+		},
+		HostConfig: &container.HostConfig{
+			LogConfig:     logConfig,
+			NetworkMode:   "host",
+			RestartPolicy: restartPolicy,
+			Mounts: []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: lokiDataDir,
+					Target: "/var/lib/loki",
+				},
+				{
+					Type:   mount.TypeBind,
+					Source: filepath.Join(conf.ClashHome, "tracing/loki/config.yaml"),
+					Target: "/etc/loki/local-config.yaml",
+				},
+			},
+		},
+	}, nil
+}
+
+func newVectorConfig(logConfig container.LogConfig, restartPolicy container.RestartPolicy) (*TracingConfig, error) {
+	return &TracingConfig{
+		ContainerConfig: &container.Config{
+			Image:    vectorImage,
+			Hostname: vectorContainerName,
+		},
+		HostConfig: &container.HostConfig{
+			LogConfig:     logConfig,
+			NetworkMode:   "host",
+			RestartPolicy: restartPolicy,
+			Mounts: []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: filepath.Join(conf.ClashHome, "tracing/vector/vector.toml"),
+					Target: "/etc/vector/vector.toml",
+				},
+			},
+		},
+	}, nil
+}
+
+func newTrafficScraperConfig(logConfig container.LogConfig, restartPolicy container.RestartPolicy, apiHost, apiPort, apiSecret string) (*TracingConfig, error) {
+	return &TracingConfig{
+		ContainerConfig: &container.Config{
+			Image:    trafficScraperImage,
+			Hostname: trafficScraperContainerName,
+			Cmd: strslice.StrSlice{
+				"-v",
+				"--autoreconnect-delay-millis",
+				"15000",
+				fmt.Sprintf("autoreconnect:ws://%s:%s/traffic?token=%s", apiHost, apiPort, apiSecret),
+				fmt.Sprintf("autoreconnect:tcp:%s:9000", apiHost),
+			},
+		},
+		HostConfig: &container.HostConfig{
+			LogConfig:     logConfig,
+			NetworkMode:   "host",
+			RestartPolicy: restartPolicy,
+		},
+	}, nil
+}
+
+func newTracingScraperConfig(logConfig container.LogConfig, restartPolicy container.RestartPolicy, apiHost, apiPort, apiSecret string) (*TracingConfig, error) {
+	return &TracingConfig{
+		ContainerConfig: &container.Config{
+			Image:    tracingScraperImage,
+			Hostname: tracingScraperContainerName,
+			Cmd: strslice.StrSlice{
+				"-v",
+				"--autoreconnect-delay-millis",
+				"15000",
+				fmt.Sprintf("autoreconnect:ws://%s:%s/profile/tracing?token=%s", apiHost, apiPort, apiSecret),
+				fmt.Sprintf("autoreconnect:tcp:%s:9000", apiHost),
+			},
+		},
+		HostConfig: &container.HostConfig{
+			LogConfig:     logConfig,
+			NetworkMode:   "host",
+			RestartPolicy: restartPolicy,
+		},
+	}, nil
+}
+
+func newGrafanaConfig(logConfig container.LogConfig, restartPolicy container.RestartPolicy) (*TracingConfig, error) {
+	grafanaDataDir := filepath.Join(conf.ClashHome, "tracing/grafana/data")
+	stat, err := os.Stat(grafanaDataDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			if err = os.MkdirAll(grafanaDataDir, 0755); err != nil {
+				return nil, fmt.Errorf("[tracing] failed to create grafana data dir: %w", err)
+			}
+		}
+	}
+	if stat != nil && !stat.IsDir() {
+		return nil, errors.New("[tracing] the grafana data directory location already exists, but is not a directory")
+	}
+
+	return &TracingConfig{
+		ContainerConfig: &container.Config{
+			User:     "root",
+			Image:    grafanaImage,
+			Hostname: grafanaContainerName,
+		},
+		HostConfig: &container.HostConfig{
+			LogConfig:     logConfig,
+			NetworkMode:   "host",
+			RestartPolicy: restartPolicy,
+			Mounts: []mount.Mount{
+				{
+					Type:   mount.TypeBind,
+					Source: grafanaDataDir,
+					Target: "/var/lib/grafana",
+				},
+				{
+					Type:   mount.TypeBind,
+					Source: filepath.Join(conf.ClashHome, "tracing/grafana/panels"),
+					Target: "/etc/dashboards",
+				},
+				{
+					Type:   mount.TypeBind,
+					Source: filepath.Join(conf.ClashHome, "tracing/grafana/provisioning/dashboards"),
+					Target: "/etc/grafana/provisioning/dashboards",
+				},
+				{
+					Type:   mount.TypeBind,
+					Source: filepath.Join(conf.ClashHome, "tracing/grafana/provisioning/datasources"),
+					Target: "/etc/grafana/provisioning/datasources",
+				},
+			},
+		},
+	}, nil
+}
+
 func startTracing(ctx context.Context, conf TPClashConf, cc *ClashConf) (map[string]string, error) {
 
-	apiHost := tplMainIP()
-	apiPort := 9090
+	apiHost := "127.0.0.1"
+	apiPort := "9090"
+	apiSecret := cc.Secret
 	if cc.ExternalController != "" {
-		host, port, err := net.SplitHostPort(cc.ExternalController)
+		_, port, err := net.SplitHostPort(cc.ExternalController)
 		if err != nil {
-			logrus.Fatalf("[tracing] failed to parse clash api address(external-controller): %v", err)
+			return nil, fmt.Errorf("[tracing] failed to parse clash api address(external-controller): %w", err)
 		}
-		apiPort, err = strconv.Atoi(port)
-		if err != nil {
-			logrus.Fatalf("[tracing] failed to parse clash api address(external-controller): %v", err)
-		}
-		if host == "127.0.0.1" || host != apiHost {
 
+		iport, err := strconv.Atoi(port)
+		if err != nil {
+			return nil, fmt.Errorf("[tracing] failed to parse clash api address(external-controller): %w", err)
+		}
+		if iport != 9090 {
+			apiPort = port
 		}
 	}
 
@@ -47,143 +210,83 @@ func startTracing(ctx context.Context, conf TPClashConf, cc *ClashConf) (map[str
 	}
 	defer func() { _ = cli.Close() }()
 
-	netResp, err := cli.NetworkCreate(ctx, tracingNetworkName, types.NetworkCreate{
-		Driver:     "bridge",
-		Attachable: true,
-	})
+	logConfig := container.LogConfig{
+		Type: "json-file",
+		Config: map[string]string{
+			"max-size": "5m",
+			"max-file": "2",
+			"labels":   "tpclash",
+		},
+	}
+
+	restartPolicy := container.RestartPolicy{
+		Name:              "on-failure",
+		MaximumRetryCount: 3,
+	}
+
+	lokiConf, err := newLokiConfig(logConfig, restartPolicy)
 	if err != nil {
-		return nil, fmt.Errorf("[tracing] failed to create tracing network: %w", err)
+		return nil, err
+	}
+	vectorConf, err := newVectorConfig(logConfig, restartPolicy)
+	if err != nil {
+		return nil, err
+	}
+	trafficScraperConf, err := newTrafficScraperConfig(logConfig, restartPolicy, apiHost, apiPort, apiSecret)
+	if err != nil {
+		return nil, err
+	}
+	tracingScraperConf, err := newTracingScraperConfig(logConfig, restartPolicy, apiHost, apiPort, apiSecret)
+	if err != nil {
+		return nil, err
+	}
+	grafanaConf, err := newGrafanaConfig(logConfig, restartPolicy)
+	if err != nil {
+		return nil, err
 	}
 
-	hostConfig := &container.HostConfig{
-		LogConfig: container.LogConfig{
-			Type: "json-file",
-			Config: map[string]string{
-				"max-size": "5m",
-				"max-file": "2",
-				"labels":   "tpclash",
-			},
-		},
-		NetworkMode: "bridge",
-		RestartPolicy: container.RestartPolicy{
-			Name:              "on-failure",
-			MaximumRetryCount: 3,
-		},
-		PortBindings: map[nat.Port][]nat.PortBinding{},
-		Mounts: []mount.Mount{
-			{
-				Type:   mount.TypeBind,
-				Source: filepath.Join(conf.ClashHome, "tracing/loki/data"),
-				Target: "/var/lib/loki",
-			},
-			{
-				Type:   mount.TypeBind,
-				Source: filepath.Join(conf.ClashHome, "tracing/loki/config.yaml"),
-				Target: "/etc/loki/local-config.yaml",
-			},
-			{
-				Type:   mount.TypeBind,
-				Source: filepath.Join(conf.ClashHome, "tracing/grafana/data"),
-				Target: "/var/lib/grafana",
-			},
-			{
-				Type:   mount.TypeBind,
-				Source: filepath.Join(conf.ClashHome, "tracing/grafana/panels"),
-				Target: "/etc/dashboards",
-			},
-			{
-				Type:   mount.TypeBind,
-				Source: filepath.Join(conf.ClashHome, "tracing/grafana/provisioning/dashboards"),
-				Target: "/etc/grafana/provisioning/dashboards",
-			},
-			{
-				Type:   mount.TypeBind,
-				Source: filepath.Join(conf.ClashHome, "tracing/grafana/provisioning/datasources"),
-				Target: "/etc/grafana/provisioning/datasources",
-			},
-			{
-				Type:   mount.TypeBind,
-				Source: filepath.Join(conf.ClashHome, "tracing/vector/vector.toml"),
-				Target: "/etc/vector/vector.toml",
-			},
-		},
-	}
-
-	networkingConfig := &network.NetworkingConfig{
-		EndpointsConfig: map[string]*network.EndpointSettings{
-			tracingNetworkName: {
-				NetworkID: netResp.ID,
-			},
-		},
-	}
-
-	stackContainers := []*container.Config{
-		{
-			Image:    lokiImage,
-			User:     "root",
-			Hostname: lokiContainerName,
-		},
-		{
-			Image:    vectorImage,
-			Hostname: vectorContainerName,
-		},
-		{
-			Image:    trafficScraperImage,
-			Hostname: trafficScraperContainerName,
-			Cmd: strslice.StrSlice{
-				"-v",
-				"--autoreconnect-delay-millis",
-				"15000",
-				fmt.Sprintf("autoreconnect:ws://%s/traffic?token=%s", cc.ExternalController, cc.Secret),
-				fmt.Sprintf("autoreconnect:tcp:%s:9000", vectorContainerName),
-			},
-		},
-		{
-			Image:    tracingScraperImage,
-			Hostname: tracingScraperContainerName,
-			Cmd: strslice.StrSlice{
-				"-v",
-				"--autoreconnect-delay-millis",
-				"15000",
-				fmt.Sprintf("autoreconnect:ws://%s/profile/tracing?token=%s", cc.ExternalController, cc.Secret),
-				fmt.Sprintf("autoreconnect:tcp:%s:9000", vectorContainerName),
-			},
-		},
-		{
-			Image:        grafanaImage,
-			Hostname:     grafanaContainerName,
-			ExposedPorts: map[nat.Port]struct{}{},
-		},
-	}
-
-	containerMap := make(map[string]string)
-	for _, c := range stackContainers {
-		createResp, err := cli.ContainerCreate(ctx, c, hostConfig, networkingConfig, nil, c.Hostname)
+	cidMap := make(map[string]string)
+	for _, c := range []*TracingConfig{lokiConf, vectorConf, trafficScraperConf, tracingScraperConf, grafanaConf} {
+		logrus.Debugf("[tracing] pulling docker image %s: %s", c.ContainerConfig.Hostname, c.ContainerConfig.Image)
+		pullResp, err := cli.ImagePull(ctx, c.ContainerConfig.Image, types.ImagePullOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("[tracing] failed to create container: %s: %w", c.Hostname, err)
+			return nil, fmt.Errorf("[tracing] failed to pull container image: %s: %w", c.ContainerConfig.Hostname, err)
+		}
+		if conf.Debug {
+			_, _ = io.Copy(os.Stdout, pullResp)
+		} else {
+			_, _ = io.Copy(io.Discard, pullResp)
 		}
 
+		logrus.Debugf("[tracing] creating docker container: %s", c.ContainerConfig.Hostname)
+		createResp, err := cli.ContainerCreate(ctx, c.ContainerConfig, c.HostConfig, c.NetworkConfig, nil, c.ContainerConfig.Hostname)
+		if err != nil {
+			return nil, fmt.Errorf("[tracing] failed to create container: %s: %w", c.ContainerConfig.Hostname, err)
+		}
+
+		logrus.Debugf("[tracing] staring docker container: %s", c.ContainerConfig.Hostname)
 		err = cli.ContainerStart(ctx, createResp.ID, types.ContainerStartOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("[tracing] failed to start container: %s: %w", c.Hostname, err)
+			return nil, fmt.Errorf("[tracing] failed to start container: %s: %w", c.ContainerConfig.Hostname, err)
 		}
-		containerMap[c.Hostname] = createResp.ID
+		cidMap[c.ContainerConfig.Hostname] = createResp.ID
 	}
 
-	return containerMap, nil
+	return cidMap, nil
 }
 
-func stopTracing(ctx context.Context, containerMap map[string]string) error {
+func stopTracing(ctx context.Context, cidMap map[string]string) error {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return fmt.Errorf("[tracing] failed to create docker client: %w", err)
 	}
 	defer func() { _ = cli.Close() }()
 
-	for k, v := range containerMap {
-		err = cli.ContainerRemove(ctx, v, types.ContainerRemoveOptions{Force: true})
+	for name, id := range cidMap {
+		logrus.Debugf("[tracing] remove docker containers: %s", name)
+		err = cli.ContainerRemove(ctx, id, types.ContainerRemoveOptions{Force: true})
 		if err != nil {
-			return fmt.Errorf("[tracing] failed to remove container: %s: %w", k, err)
+			return fmt.Errorf("[tracing] failed to remove container: %s: %w", name, err)
 		}
 	}
 

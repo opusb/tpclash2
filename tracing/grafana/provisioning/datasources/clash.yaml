@@ -12,7 +12,7 @@ datasources:
     # <int> org id. will default to orgId 1 if not specified
     orgId: 1
     # <string> url
-    url: http://tplcash-loki:3100
+    url: http://127.0.0.1:3100
     isDefault: true
     # <bool> allow users to edit datasources from the UI.
     editable: true

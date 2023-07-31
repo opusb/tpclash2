@@ -107,19 +107,22 @@ var rootCmd = &cobra.Command{
 
 		var containerMap map[string]string
 		if conf.EnableTracing {
-			logrus.Infof("[main] 🔪 tracing enabled, starting tracing project...")
+			logrus.Infof("[main] 🔪 永远不要忘记, 吾等为何而战...")
 			containerMap, err = startTracing(ctx, conf, cc)
 			if err != nil {
 				logrus.Errorf("[main] ❌ tracing project deploy failed: %v", err)
 			}
 		}
 
+		<-ctx.Done()
 		logrus.Info("[main] 🛑 TPClash 正在停止...")
 		if err = DisableDockerCompatible(); err != nil {
 			logrus.Errorf("[main] failed disable docker compatible: %v", err)
 		}
 
 		if conf.EnableTracing && containerMap != nil {
+			logrus.Infof("[main] 🔪 恐惧, 是万敌之首...")
+
 			tracingStopCtx, tracingStopCancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer tracingStopCancel()
 

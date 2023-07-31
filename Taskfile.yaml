@@ -69,7 +69,7 @@ tasks:
     cmds:
       - cp -r tracing static/tracing
     status:
-      - test -f static/tracing
+      - test -d static/tracing
 
   build-premium-dashboard:
     desc: Build Clash Premium Dashboard

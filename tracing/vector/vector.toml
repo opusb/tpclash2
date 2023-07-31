@@ -45,6 +45,6 @@ if exists(.metadata) {
 [sinks.loki]
 type = "loki"
 inputs = [ "traffic", "tracing" ]
-endpoint = "http://tpclash-loki:3100"
+endpoint = "http://127.0.0.1:3100"
 encoding.codec = "json"
 labels.type = "{{ type }}"
