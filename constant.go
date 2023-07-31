@@ -25,7 +25,7 @@ const logo = `
    ╚═╝   ╚═╝      ╚═════╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
 `
 
-const systmedTpl = `[Unit]
+const systemdTpl = `[Unit]
 Description=Transparent proxy tool for Clash
 After=network.target
 

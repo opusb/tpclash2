@@ -24,7 +24,7 @@ TPClash 只有一个二进制文件, 直接从 Release 页面下载二进制文�
 
 ### 2.2、Systemd 安装
 
-除了直接运行之外, 针对于支持 Systmed 的系统 TPClash 也支持 install 命令用于将自身安装为 Systemd 服务; **安装时可指定配置参数, TPClash 会自动
+除了直接运行之外, 针对于支持 Systemd 的系统 TPClash 也支持 install 命令用于将自身安装为 Systemd 服务; **安装时可指定配置参数, TPClash 会自动
 将其写入 Systemd 配置文件中.**
 
 ```sh

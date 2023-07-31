@@ -266,7 +266,7 @@ var installCmd = &cobra.Command{
 			opts += "--disable-extract"
 		}
 
-		err = os.WriteFile(filepath.Join(systemdDir, "tpclash.service"), []byte(fmt.Sprintf(systmedTpl, opts)), 0644)
+		err = os.WriteFile(filepath.Join(systemdDir, "tpclash.service"), []byte(fmt.Sprintf(systemdTpl, opts)), 0644)
 		if err != nil {
 			logrus.Fatalf("[install] failed to create systemd service: %v", err)
 		}
