@@ -48,8 +48,6 @@ const (
 )
 
 const (
-	tracingNetworkName = "tpclash-tracing"
-
 	lokiImage           = "grafana/loki:2.8.0"
 	vectorImage         = "timberio/vector:0.X-alpine"
 	trafficScraperImage = "vi0oss/websocat:0.10.0"
