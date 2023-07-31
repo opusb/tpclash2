@@ -116,9 +116,6 @@ TPClash 启动成功后, 将其他主机的网关指向当前 TPClash 服务器 
 ### 3.1、TUN 模式配置
 
 ```yaml
-# 请指定自己实际的接口名称(ip a 获取)
-interface-name: ens160
-
 # 需要开启 TUN 配置
 tun:
   enable: true
@@ -128,6 +125,8 @@ tun:
   #   - 8.8.8.8:53
   #   - tcp://8.8.8.8:53
   auto-route: true
+  auto-redir: true
+  auto-detect-interface: true
 
 # 开启 DNS 配置, 且使用 fake-ip 模式
 dns:
@@ -158,6 +157,8 @@ tun:
   #   - tcp://8.8.8.8:53
   # auto-route 与 ebpf 冲突, 不能同时使用
   #auto-route: true
+  #auto-redir: true
+  #auto-detect-interface: true
 
 # ebpf 需要指定物理网卡
 ebpf:
