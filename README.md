@@ -233,6 +233,36 @@ TPClash 将会自动完成解密并加载:**
 
 模版函数可能随后续更新继续添加, 使用方法请参考项目内的 [example.yaml](https://github.com/mritd/tpclash/blob/master/example.yaml) 配置.
 
+### 4.4、Premium Tracing
+
+从 `v0.1.8` 版本开始提供 Premium 核心的 [Tracing Dashboard](https://github.com/Dreamacro/clash-tracing) 自动部署, **此功能需要宿主机安装有 Docker, TPClash 会调用 Docker API 自动创建容器.**
+
+对于采用 Systemd 部署的用户, 宿主机安装好 Docker 后无需其他特殊操作; 对于采用 Docker 部署的用户, 需要增加一个挂载:
+
+```diff
+docker run -dt \
+  --name tpclash \
+  --privileged \
+  --network=host \
+  -v /root/clash.yaml:/etc/clash.yaml \
++ -v /var/run/docker.sock:/var/run/docker.sock \
+  mritd/tpclash
+```
+
+**然后需要在配置文件中开启 Tracing:**
+
+```yaml
+profile:
+    tracing: true
+```
+
+**最后TPClash 增加 Tracing 选项启动即可:**
+
+```sh
+./tpclash-premium-linux-amd64-v3 --enable-tracing -c /etc/clash.yaml
+```
+
+启动完成后可访问 `http://TPCLASH_IP:3000` 查看 Tracing Dashboard, 其默认账户密码均为 `admin`.
 
 ## 五、TPClash 做了什么
 
