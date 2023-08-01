@@ -3,7 +3,10 @@
         "list": [
             {
                 "builtIn": 1,
-                "datasource": {},
+                "datasource": {
+                    "type": "loki",
+                    "uid": "P8E80F9AEF21F6940"
+                },
                 "enable": true,
                 "hide": true,
                 "iconColor": "rgba(0, 211, 255, 1)",
@@ -21,15 +24,19 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
+    "id": 1,
     "links": [],
     "liveNow": false,
     "panels": [
         {
-            "datasource": {},
+            "datasource": {
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
+            },
             "fieldConfig": {
                 "defaults": {
                     "color": {
-                        "mode": "thresholds"
+                        "mode": "continuous-BlPu"
                     },
                     "mappings": [],
                     "thresholds": {
@@ -50,7 +57,7 @@
             },
             "gridPos": {
                 "h": 10,
-                "w": 6,
+                "w": 9,
                 "x": 0,
                 "y": 0
             },
@@ -66,9 +73,10 @@
                     "values": true
                 },
                 "showUnfilled": true,
-                "text": {}
+                "text": {},
+                "valueMode": "color"
             },
-            "pluginVersion": "9.4.7",
+            "pluginVersion": "10.0.3",
             "targets": [
                 {
                     "datasource": {
@@ -122,10 +130,14 @@
                     }
                 }
             ],
+            "transparent": true,
             "type": "bargauge"
         },
         {
-            "datasource": {},
+            "datasource": {
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
+            },
             "fieldConfig": {
                 "defaults": {
                     "custom": {
@@ -174,12 +186,13 @@
             },
             "gridPos": {
                 "h": 10,
-                "w": 11,
-                "x": 6,
+                "w": 8,
+                "x": 9,
                 "y": 0
             },
             "id": 8,
             "options": {
+                "cellHeight": "sm",
                 "footer": {
                     "countRows": false,
                     "fields": "",
@@ -197,7 +210,7 @@
                     }
                 ]
             },
-            "pluginVersion": "9.4.7",
+            "pluginVersion": "10.0.3",
             "targets": [
                 {
                     "datasource": {
@@ -250,15 +263,19 @@
                     }
                 }
             ],
+            "transparent": true,
             "type": "table"
         },
         {
-            "datasource": {},
+            "datasource": {
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
+            },
             "description": "",
             "fieldConfig": {
                 "defaults": {
                     "color": {
-                        "mode": "continuous-GrYlRd"
+                        "mode": "continuous-BlPu"
                     },
                     "mappings": [],
                     "thresholds": {
@@ -295,9 +312,10 @@
                     "values": true
                 },
                 "showUnfilled": true,
-                "text": {}
+                "text": {},
+                "valueMode": "color"
             },
-            "pluginVersion": "9.4.7",
+            "pluginVersion": "10.0.3",
             "targets": [
                 {
                     "datasource": {
@@ -360,14 +378,18 @@
                     }
                 }
             ],
+            "transparent": true,
             "type": "bargauge"
         },
         {
-            "datasource": {},
+            "datasource": {
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
+            },
             "fieldConfig": {
                 "defaults": {
                     "color": {
-                        "mode": "palette-classic"
+                        "mode": "continuous-GrYlRd"
                     },
                     "custom": {
                         "axisCenteredZero": false,
@@ -376,7 +398,7 @@
                         "axisPlacement": "auto",
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 0,
+                        "fillOpacity": 10,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
@@ -384,8 +406,11 @@
                             "viz": false
                         },
                         "lineInterpolation": "smooth",
+                        "lineStyle": {
+                            "fill": "solid"
+                        },
                         "lineWidth": 1,
-                        "pointSize": 6,
+                        "pointSize": 5,
                         "scaleDistribution": {
                             "type": "linear"
                         },
@@ -464,15 +489,19 @@
             ],
             "title": "规则匹配速度",
             "transformations": [],
+            "transparent": true,
             "type": "timeseries"
         },
         {
-            "datasource": {},
+            "datasource": {
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
+            },
             "description": "",
             "fieldConfig": {
                 "defaults": {
                     "color": {
-                        "mode": "thresholds"
+                        "mode": "continuous-BlPu"
                     },
                     "mappings": [],
                     "thresholds": {
@@ -513,7 +542,7 @@
                 },
                 "textMode": "auto"
             },
-            "pluginVersion": "9.4.7",
+            "pluginVersion": "10.0.3",
             "targets": [
                 {
                     "datasource": {
@@ -554,14 +583,18 @@
                     }
                 }
             ],
+            "transparent": true,
             "type": "stat"
         },
         {
-            "datasource": {},
+            "datasource": {
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
+            },
             "fieldConfig": {
                 "defaults": {
                     "color": {
-                        "mode": "palette-classic"
+                        "mode": "continuous-GrYlRd"
                     },
                     "custom": {
                         "axisCenteredZero": false,
@@ -570,14 +603,14 @@
                         "axisPlacement": "auto",
                         "barAlignment": 0,
                         "drawStyle": "line",
-                        "fillOpacity": 0,
+                        "fillOpacity": 10,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
                             "tooltip": false,
                             "viz": false
                         },
-                        "lineInterpolation": "linear",
+                        "lineInterpolation": "smooth",
                         "lineWidth": 1,
                         "pointSize": 5,
                         "scaleDistribution": {
@@ -645,10 +678,14 @@
                 }
             ],
             "title": "DNS 平均查询时间",
+            "transparent": true,
             "type": "timeseries"
         },
         {
-            "datasource": {},
+            "datasource": {
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
+            },
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -737,10 +774,14 @@
             ],
             "title": "代理 Dial 时间",
             "transformations": [],
+            "transparent": true,
             "type": "timeseries"
         },
         {
-            "datasource": {},
+            "datasource": {
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
+            },
             "fieldConfig": {
                 "defaults": {
                     "color": {
@@ -840,10 +881,14 @@
                 }
             ],
             "title": "实时流量",
+            "transparent": true,
             "type": "timeseries"
         },
         {
-            "datasource": {},
+            "datasource": {
+                "type": "loki",
+                "uid": "P8E80F9AEF21F6940"
+            },
             "description": "",
             "fieldConfig": {
                 "defaults": {
@@ -889,7 +934,7 @@
                 },
                 "textMode": "auto"
             },
-            "pluginVersion": "9.4.7",
+            "pluginVersion": "10.0.3",
             "targets": [
                 {
                     "datasource": {
@@ -905,11 +950,12 @@
             ],
             "title": "DNS 查询",
             "transformations": [],
+            "transparent": true,
             "type": "stat"
         }
     ],
-    "refresh": "",
-    "schemaVersion": 1,
+    "refresh": "5s",
+    "schemaVersion": 38,
     "style": "dark",
     "tags": [],
     "templating": {
@@ -923,6 +969,6 @@
     "timezone": "",
     "title": "Clash",
     "uid": "pOXPjK-7z",
-    "version": 1,
+    "version": 4,
     "weekStart": ""
 }
