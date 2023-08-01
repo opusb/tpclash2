@@ -21,8 +21,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
-  "iteration": 1650798919451,
+  "id": 2,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -100,7 +99,7 @@
       "datasource": {},
       "gridPos": {
         "h": 11,
-        "w": 12,
+        "w": 24,
         "x": 0,
         "y": 11
       },
@@ -132,7 +131,7 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 36,
+  "schemaVersion": 38,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -179,6 +178,6 @@
   "timezone": "",
   "title": "Logs",
   "uid": "k7dzdAmnz",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
