@@ -256,7 +256,7 @@ profile:
     tracing: true
 ```
 
-**最后TPClash 增加 Tracing 选项启动即可:**
+**最后启动 TPClash 时增加 Tracing 选项即可:**
 
 ```sh
 ./tpclash-premium-linux-amd64-v3 --enable-tracing -c /etc/clash.yaml
