@@ -10,13 +10,13 @@ import (
 )
 
 var confFuncsMap = template.FuncMap{
-	"IfName":     tplMainNic,
-	"MainNic":    tplMainNic,
-	"MainIP":     tplMainIP,
-	"DefaultDNS": tplDefaultDNS,
+	"IfName":     getMainNic,
+	"MainNic":    getMainNic,
+	"MainIP":     getMainIP,
+	"DefaultDNS": getDefaultDNS,
 }
 
-func tplMainNic() string {
+func getMainNic() string {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		logrus.Errorf("[helper/if-name] failed to list network interfaces: %v", err)
@@ -44,7 +44,7 @@ func tplMainNic() string {
 	return ""
 }
 
-func tplMainIP() string {
+func getMainIP() string {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		logrus.Errorf("[helper/if-name] failed to list network interfaces: %v", err)
@@ -72,7 +72,7 @@ func tplMainIP() string {
 	return ""
 }
 
-func tplDefaultDNS() []string {
+func getDefaultDNS() []string {
 	resolvConf := "/run/systemd/resolve/resolv.conf"
 	_, err := os.Stat(resolvConf)
 	if err != nil {

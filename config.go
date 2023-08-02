@@ -245,7 +245,7 @@ func AutoFix(c string) string {
 		return c
 	}
 
-	// Auto-inject main network interface name
+	// Auto-inject some value
 	if err = tpl.Execute(&buf, nil); err != nil {
 		logrus.Errorf("[autofix] failed to execute template: %v", err)
 		return c

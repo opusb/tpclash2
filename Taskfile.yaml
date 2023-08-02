@@ -11,6 +11,10 @@ vars:
     sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.name'
   META_VERSION:
     sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.name'
+  CLASH_PREMIUM_URL:
+    sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.assets[].browser_download_url | select (. | test("clash-{{.PLATFORM}}-\\d{4}.*gz"))'
+  CLASH_META_URL:
+    sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.assets[].browser_download_url | select (. | test("clash.meta-{{.PLATFORM}}-v\\d+.*gz"))'
 
 tasks:
   clean:
@@ -103,11 +107,8 @@ tasks:
 
   download-clash-premium:
     desc: Download Clash Premium
-    vars:
-      CLASH_URL:
-        sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.assets[].browser_download_url | select (. | test("clash-{{.PLATFORM}}-\\d{4}.*gz"))'
     cmds:
-      - curl -sSL {{.CLASH_URL}} > build/clash-{{.PLATFORM}}.gz
+      - curl -sSL {{.CLASH_PREMIUM_URL}} > build/clash-{{.PLATFORM}}.gz
       - gzip -d build/clash-{{.PLATFORM}}.gz
       - chmod +x build/clash-{{.PLATFORM}}
     status:
@@ -115,9 +116,6 @@ tasks:
 
   download-clash-meta:
     desc: Download Clash Meta
-    vars:
-      CLASH_META_URL:
-        sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.assets[].browser_download_url | select (. | test("clash.meta-{{.PLATFORM}}-v\\d+.*gz"))'
     cmds:
       - curl -sSL {{.CLASH_META_URL}} > build/clash-meta-{{.PLATFORM}}.gz
       - gzip -d build/clash-meta-{{.PLATFORM}}.gz
@@ -159,7 +157,8 @@ tasks:
           -X 'main.build={{.BUILD_DATE}}'
           -X 'main.commit={{.COMMIT_SHA}}'
           -X 'main.version={{.VERSION}}'
-          -X 'main.clash={{.PREMIUM_VERSION}}'" \
+          -X 'main.clash={{.PREMIUM_VERSION}}' \
+          -X 'main.branch=premium'" \
           {{if .DEBUG}}-gcflags "all=-N -l"{{end}}
 
   build-tpclash-meta:
@@ -169,7 +168,7 @@ tasks:
       - task: mkdir
       - task: download-ruleset
       - task: download-mmdb
-      - task: copy-tracing
+#      - task: copy-tracing
       - task: build-meta-dashboard
       - task: download-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }
@@ -182,7 +181,8 @@ tasks:
           -X 'main.build={{.BUILD_DATE}}'
           -X 'main.commit={{.COMMIT_SHA}}'
           -X 'main.version={{.VERSION}}'
-          -X 'main.clash=Meta {{.META_VERSION}}'" \
+          -X 'main.clash=Meta {{.META_VERSION}}' \
+          -X 'main.branch=meta'" \
           {{if .DEBUG}}-gcflags "all=-N -l"{{end}}
 
 
@@ -422,3 +422,4 @@ tasks:
       - task: linux-amd64-v3-meta
       - task: linux-arm64-meta
       - rm -rf static build/clash-*
+      - cp flatcar.butane.yaml example.yaml build

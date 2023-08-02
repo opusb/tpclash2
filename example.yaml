@@ -1,20 +1,6 @@
-# Port of HTTP(S) proxy server on the local end
-#port: 7890
-
-# Port of SOCKS5 proxy server on the local end
-#socks-port: 7891
-
-# Transparent proxy server port for Linux and macOS (Redirect TCP and TProxy UDP)
-#redir-port: 7892
-# Transparent proxy server port for Linux (TProxy TCP and TProxy UDP)
-#tproxy-port: 7893
 # HTTP(S) and SOCKS4(A)/SOCKS5 server on the same port
 mixed-port: 7890
 
-# authentication of local SOCKS5/HTTP(S) server
-# authentication:
-#  - "user1:pass1"
-#  - "user2:pass2"
 # Set to true to allow connections to the local-end server from
 # other LAN IP addresses
 allow-lan: true
@@ -40,7 +26,6 @@ ipv6: false
 
 # RESTful web API listening address
 external-controller: 0.0.0.0:9090
-#external-ui: yacd
 secret:
 
 # Static hosts for DNS server and connection establishment (like /etc/hosts)
@@ -63,7 +48,6 @@ profile:
   store-fake-ip: true
 
 # Outbound interface name
-#interface-name: ens34
 #interface-name: {{IfName}}
 
 #ebpf:
@@ -75,8 +59,6 @@ tun:
   stack: system # or gvisor
   dns-hijack:
     - any:53
-  #   - 8.8.8.8:53
-  #   - tcp://8.8.8.8:53
   auto-route: true
   auto-redir: true
   auto-detect-interface: true
@@ -88,12 +70,6 @@ tun:
 dns:
   enable: true
   listen: 0.0.0.0:1053
-  ipv6: false # when the false, response to AAAA questions will be empty
-  # These nameservers are used to resolve the DNS nameserver hostnames below.
-  # Specify IP addresses only
-  default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   # use-hosts: true # lookup hosts and return IP record
@@ -102,7 +78,12 @@ dns:
   # real IP addresses
   fake-ip-filter:
     - '*.lan'
-
+    - '*.local'
+  # These nameservers are used to resolve the DNS nameserver hostnames below.
+  # Specify IP addresses only
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
   # Supports UDP, TCP, DoT, DoH. You can specify the port to connect to.
   # All DNS questions are sent directly to the nameserver, without proxies
   # involved. Clash answers the DNS question with the first result gathered.
@@ -117,7 +98,6 @@ proxies:
     port: 443
     password: xx.xx.xx
     udp: true
-
 
 proxy-groups:
   - name: "GFW_PROXY"
