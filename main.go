@@ -240,7 +240,7 @@ var installCmd = &cobra.Command{
 
 		opts := ""
 		if conf.Debug {
-			opts += "--debug"
+			opts += " --debug"
 		}
 		if conf.ClashHome != "" {
 			opts += fmt.Sprintf(" %s %s", "--home", conf.ClashHome)
@@ -263,7 +263,10 @@ var installCmd = &cobra.Command{
 			opts += fmt.Sprintf(" %s %s", "--config-password", conf.ConfigEncPassword)
 		}
 		if conf.DisableExtract {
-			opts += "--disable-extract"
+			opts += " --disable-extract"
+		}
+		if conf.EnableTracing {
+			opts += " --enable-tracing"
 		}
 
 		err = os.WriteFile(filepath.Join(systemdDir, "tpclash.service"), []byte(fmt.Sprintf(systemdTpl, opts)), 0644)
