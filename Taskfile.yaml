@@ -309,7 +309,7 @@ tasks:
     cmds:
       - task: build-tpclash-meta
         vars: {
-          PLATFORM: linux-amd64,
+          PLATFORM: linux-amd64-compatible,
           GOOS: linux,
           GOARCH: amd64,
           GOAMD64: v2
@@ -319,7 +319,7 @@ tasks:
     cmds:
       - task: build-tpclash-meta
         vars: {
-          PLATFORM: linux-amd64-v3,
+          PLATFORM: linux-amd64,
           GOOS: linux,
           GOARCH: amd64,
           GOAMD64: v3
