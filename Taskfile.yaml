@@ -35,7 +35,6 @@ tasks:
       - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/direct.txt > static/ruleset/direct.yaml
       - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/private.txt > static/ruleset/private.yaml
       - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/gfw.txt > static/ruleset/gfw.yaml
-      - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/greatfire.txt > static/ruleset/greatfire.yaml
       - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/tld-not-cn.txt > static/ruleset/tld-not-cn.yaml
       - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/telegramcidr.txt > static/ruleset/telegramcidr.yaml
       - curl -sSL https://cdn.jsdelivr.net/gh/Loyalsoldier/clash-rules@release/cncidr.txt > static/ruleset/cncidr.yaml
