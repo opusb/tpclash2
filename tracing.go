@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/docker/docker/errdefs"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/docker/docker/api/types/strslice"
@@ -184,7 +186,7 @@ func newGrafanaConfig(logConfig container.LogConfig, restartPolicy container.Res
 	}, nil
 }
 
-func startTracing(ctx context.Context, conf TPClashConf, cc *ClashConf) (map[string]string, error) {
+func startTracing(ctx context.Context, conf TPClashConf, cc *ClashConf) error {
 
 	apiHost := "127.0.0.1"
 	apiPort := "9090"
@@ -192,12 +194,12 @@ func startTracing(ctx context.Context, conf TPClashConf, cc *ClashConf) (map[str
 	if cc.ExternalController != "" {
 		_, port, err := net.SplitHostPort(cc.ExternalController)
 		if err != nil {
-			return nil, fmt.Errorf("[tracing] failed to parse clash api address(external-controller): %w", err)
+			return fmt.Errorf("[tracing] failed to parse clash api address(external-controller): %w", err)
 		}
 
 		iport, err := strconv.Atoi(port)
 		if err != nil {
-			return nil, fmt.Errorf("[tracing] failed to parse clash api address(external-controller): %w", err)
+			return fmt.Errorf("[tracing] failed to parse clash api address(external-controller): %w", err)
 		}
 		if iport != 9090 {
 			apiPort = port
@@ -206,7 +208,7 @@ func startTracing(ctx context.Context, conf TPClashConf, cc *ClashConf) (map[str
 
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
-		return nil, fmt.Errorf("[tracing] failed to create docker client: %w", err)
+		return fmt.Errorf("[tracing] failed to create docker client: %w", err)
 	}
 	defer func() { _ = cli.Close() }()
 
@@ -226,31 +228,30 @@ func startTracing(ctx context.Context, conf TPClashConf, cc *ClashConf) (map[str
 
 	lokiConf, err := newLokiConfig(logConfig, restartPolicy)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	vectorConf, err := newVectorConfig(logConfig, restartPolicy)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	trafficScraperConf, err := newTrafficScraperConfig(logConfig, restartPolicy, apiHost, apiPort, apiSecret)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	tracingScraperConf, err := newTracingScraperConfig(logConfig, restartPolicy, apiHost, apiPort, apiSecret)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	grafanaConf, err := newGrafanaConfig(logConfig, restartPolicy)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	cidMap := make(map[string]string)
 	for _, c := range []*TracingConfig{lokiConf, vectorConf, trafficScraperConf, tracingScraperConf, grafanaConf} {
 		logrus.Debugf("[tracing] pulling docker image %s: %s", c.ContainerConfig.Hostname, c.ContainerConfig.Image)
 		pullResp, err := cli.ImagePull(ctx, c.ContainerConfig.Image, types.ImagePullOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("[tracing] failed to pull container image: %s: %w", c.ContainerConfig.Hostname, err)
+			return fmt.Errorf("[tracing] failed to pull container image: %s: %w", c.ContainerConfig.Hostname, err)
 		}
 		if conf.Debug {
 			_, _ = io.Copy(os.Stdout, pullResp)
@@ -261,31 +262,33 @@ func startTracing(ctx context.Context, conf TPClashConf, cc *ClashConf) (map[str
 		logrus.Debugf("[tracing] creating docker container: %s", c.ContainerConfig.Hostname)
 		createResp, err := cli.ContainerCreate(ctx, c.ContainerConfig, c.HostConfig, c.NetworkConfig, nil, c.ContainerConfig.Hostname)
 		if err != nil {
-			return nil, fmt.Errorf("[tracing] failed to create container: %s: %w", c.ContainerConfig.Hostname, err)
+			return fmt.Errorf("[tracing] failed to create container: %s: %w", c.ContainerConfig.Hostname, err)
 		}
 
 		logrus.Debugf("[tracing] staring docker container: %s", c.ContainerConfig.Hostname)
 		err = cli.ContainerStart(ctx, createResp.ID, types.ContainerStartOptions{})
 		if err != nil {
-			return nil, fmt.Errorf("[tracing] failed to start container: %s: %w", c.ContainerConfig.Hostname, err)
+			return fmt.Errorf("[tracing] failed to start container: %s: %w", c.ContainerConfig.Hostname, err)
 		}
-		cidMap[c.ContainerConfig.Hostname] = createResp.ID
 	}
 
-	return cidMap, nil
+	return nil
 }
 
-func stopTracing(ctx context.Context, cidMap map[string]string) error {
+func stopTracing(ctx context.Context) error {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return fmt.Errorf("[tracing] failed to create docker client: %w", err)
 	}
 	defer func() { _ = cli.Close() }()
 
-	for name, id := range cidMap {
+	for _, name := range []string{grafanaContainerName, lokiContainerName, vectorContainerName, tracingScraperContainerName, trafficScraperContainerName} {
 		logrus.Debugf("[tracing] remove docker containers: %s", name)
-		err = cli.ContainerRemove(ctx, id, types.ContainerRemoveOptions{Force: true})
+		err = cli.ContainerRemove(ctx, name, types.ContainerRemoveOptions{Force: true})
 		if err != nil {
+			if _, ok := err.(errdefs.ErrNotFound); ok {
+				continue
+			}
 			return fmt.Errorf("[tracing] failed to remove container: %s: %w", name, err)
 		}
 	}
