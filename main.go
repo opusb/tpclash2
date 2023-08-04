@@ -21,6 +21,7 @@ var (
 	version string
 	clash   string
 	branch  string
+	binName string
 )
 
 var conf TPClashConf
@@ -146,7 +147,7 @@ var rootCmd = &cobra.Command{
 func init() {
 	cobra.EnableCommandSorting = false
 
-	rootCmd.AddCommand(encCmd, decCmd, installCmd, uninstallCmd)
+	rootCmd.AddCommand(encCmd, decCmd, installCmd, uninstallCmd, upgradeCmd)
 
 	rootCmd.PersistentFlags().BoolVar(&conf.Debug, "debug", false, "enable debug log")
 	rootCmd.PersistentFlags().BoolVar(&conf.Test, "test", false, "enable test mode, tpclash will automatically exit after 5 minutes")

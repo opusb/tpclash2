@@ -62,13 +62,13 @@ const (
 )
 
 const installedMessage = logo + `  👌 TPClash 安装完成, 您可以使用以下命令启动:
-     - 启动服务: systemctl start tpclash
-     - 停止服务: systemctl stop tpclash
-     - 重启服务: systemctl restart tpclash
-     - 开启自启动: systemctl enable tpclash
-     - 关闭自启动: systemctl disable tpclash
-     - 查看日志: journalctl -fu tpclash
-     - 重载服务配置: systemctl daemon-reload
+     ● 启动服务: systemctl start tpclash
+     ● 停止服务: systemctl stop tpclash
+     ● 重启服务: systemctl restart tpclash
+     ● 开启自启动: systemctl enable tpclash
+     ● 关闭自启动: systemctl disable tpclash
+     ● 查看日志: journalctl -fu tpclash
+     ● 重载服务配置: systemctl daemon-reload
 `
 
 const reinstallMessage = `
@@ -83,6 +83,22 @@ const uninstallMessage = `
 `
 
 const uninstalledMessage = logo + `  👌 TPClash 已卸载, 如有任何问题请开启 issue 或从 Telegram 讨论组反馈
-     - 官方仓库: https://github.com/mritd/tpclash
-     - Telegram: https://t.me/tpclash
+     ● 官方仓库: https://github.com/mritd/tpclash
+     ● Telegram: https://t.me/tpclash
+`
+
+const (
+	githubLatestApi   = "https://api.github.com/repos/mritd/tpclash/releases/latest"
+	githubUpgradeAddr = "https://github.com/mritd/tpclash/releases/download/v%s/%s"
+	ghProxyAddr       = "https://ghproxy.com/"
+)
+
+const upgradedMessage = logo + `  👌 TPClash 已升级完成, 请重新启动以应用更改
+     ● 启动服务: systemctl start tpclash
+     ● 停止服务: systemctl stop tpclash
+     ● 重启服务: systemctl restart tpclash
+     ● 开启自启动: systemctl enable tpclash
+     ● 关闭自启动: systemctl disable tpclash
+     ● 查看日志: journalctl -fu tpclash
+     ● 重载服务配置: systemctl daemon-reload
 `

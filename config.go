@@ -33,9 +33,10 @@ type TPClashConf struct {
 	CheckInterval     time.Duration
 	ConfigEncPassword string
 
-	DisableExtract bool
-	EnableTracing  bool
-	PrintVersion   bool
+	DisableExtract     bool
+	EnableTracing      bool
+	PrintVersion       bool
+	UpgradeWithGhProxy bool
 
 	Test  bool
 	Debug bool

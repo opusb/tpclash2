@@ -159,7 +159,8 @@ tasks:
           -X 'main.commit={{.COMMIT_SHA}}'
           -X 'main.version={{.VERSION}}'
           -X 'main.clash={{.PREMIUM_VERSION}}' \
-          -X 'main.branch=premium'" \
+          -X 'main.branch=premium' \
+          -X 'main.binName=tpclash-premium-{{.PLATFORM}}'" \
           {{if .DEBUG}}-gcflags "all=-N -l"{{end}}
 
   build-tpclash-meta:
@@ -182,7 +183,8 @@ tasks:
           -X 'main.commit={{.COMMIT_SHA}}'
           -X 'main.version={{.VERSION}}'
           -X 'main.clash=Meta {{.META_VERSION}}' \
-          -X 'main.branch=meta'" \
+          -X 'main.branch=meta' \
+          -X 'main.binName=tpclash-meta-{{.PLATFORM}}'" \
           {{if .DEBUG}}-gcflags "all=-N -l"{{end}}
 
 
@@ -307,7 +309,7 @@ tasks:
     cmds:
       - task: build-tpclash-meta
         vars: {
-          PLATFORM: linux-amd64-compatible,
+          PLATFORM: linux-amd64,
           GOOS: linux,
           GOARCH: amd64,
           GOAMD64: v2
@@ -317,7 +319,7 @@ tasks:
     cmds:
       - task: build-tpclash-meta
         vars: {
-          PLATFORM: linux-amd64,
+          PLATFORM: linux-amd64-v3,
           GOOS: linux,
           GOARCH: amd64,
           GOAMD64: v3
