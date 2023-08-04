@@ -24,8 +24,8 @@ TPClash 只有一个二进制文件, 直接从 Release 页面下载二进制文�
 
 ### 2.2、Systemd 安装
 
-除了直接运行之外, 针对于支持 Systemd 的系统 TPClash 也支持 install 命令用于将自身安装为 Systemd 服务; **安装时可指定配置参数, TPClash 会自动
-将其写入 Systemd 配置文件中.**
+除了直接运行之外, 针对于支持 Systemd 的系统 TPClash 也支持 install 命令用于将自身安装为 Systemd 服务; **安装时 TPClash 先将自身复制
+到 `/usr/local/bin/tpclash`, 然后创建 `/etc/systemd/systemd/tpclash.service` 配置文件, 并且将附加参数也同步写入到 Systemd 配置中.**
 
 ```sh
 root@tpclash ~ # ❯❯❯ ./tpclash-premium-linux-amd64-v3 install --config https://example.com/clash.yaml
@@ -44,24 +44,6 @@ root@tpclash ~ # ❯❯❯ ./tpclash-premium-linux-amd64-v3 install --config htt
      - 关闭自启动: systemctl disable tpclash
      - 查看日志: journalctl -fu tpclash
      - 重载服务配置: systemctl daemon-reload
-
-root@tpclash ~ # ❯❯❯ systemctl cat tpclash
-# /etc/systemd/system/tpclash.service
-[Unit]
-Description=Transparent proxy tool for Clash
-After=network.target
-
-[Service]
-Type=simple
-User=root
-Restart=on-failure
-ExecStart=/usr/local/bin/tpclash --home /data/clash --config https://example.com/clash.yaml --ui yacd --check-interval 2m0s
-
-RestartSec=10s
-TimeoutStopSec=30s
-
-[Install]
-WantedBy=multi-user.target
 ```
 
 ### 2.3、Docker 运行
@@ -106,6 +88,21 @@ TPClash 启动成功后, 将其他主机的网关指向当前 TPClash 服务器 
 
 **请不要将其他主机的 DNS 也设置为 TPClash 服务器 IP, 因为这可能导致一些不可预测的问题, 具体请参考 [Clash DNS 科普](https://github.com/mritd/tpclash/wiki/Clash-DNS-%E7%A7%91%E6%99%AE).**
 
+### 2.6、升级 TPClash
+
+对于二进制文件部署的用户, 可以使用以下命令升级到最新版本:
+
+```bash
+root@tpclash ~ # ❯❯❯ tpclash upgrade
+```
+
+如果想要升级到特定版本也可以指定版本号:
+
+```bash
+root@tpclash ~ # ❯❯❯ tpclash upgrade v0.1.10
+```
+
+**升级前请确保关闭了 tpclash 服务, 升级时默认使用 `https://ghproxy.com` 进行加速, 如果不想使用可以通过 `--with-ghproxy=false` 选项关闭.**
 
 ## 三、TPClash 配置
 

@@ -16,7 +16,7 @@ import (
 )
 
 var upgradeCmd = &cobra.Command{
-	Use:   "upgrade",
+	Use:   "upgrade [VERSION]",
 	Short: "upgrade TPClash",
 	Run: func(cmd *cobra.Command, args []string) {
 		var err error
