@@ -81,22 +81,3 @@ systemd:
 
         [Install]
         WantedBy=multi-user.target
-
-    - name: watchtower.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=A container-based solution for automating Docker container base image updates.
-        After=network-online.target
-        Wants=network-online.target
-
-        [Service]
-        ExecStartPre=-/usr/bin/docker rm -f watchtower
-        ExecStartPre=/usr/bin/docker pull containrrr/watchtower
-        ExecStart=/usr/bin/docker run --tty \
-                                  --name watchtower \
-                                  -v /var/run/docker.sock:/var/run/docker.sock \
-                                    containrrr/watchtower --cleanup --interval 3600
-
-        [Install]
-        WantedBy=multi-user.target
