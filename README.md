@@ -25,7 +25,7 @@ TPClash 只有一个二进制文件, 直接从 Release 页面下载二进制文�
 ### 2.2、Systemd 安装
 
 除了直接运行之外, 针对于支持 Systemd 的系统 TPClash 也支持 install 命令用于将自身安装为 Systemd 服务; **安装时 TPClash 先将自身复制
-到 `/usr/local/bin/tpclash`, 然后创建 `/etc/systemd/systemd/tpclash.service` 配置文件, 并且将附加参数也同步写入到 Systemd 配置中.**
+到 `/usr/local/bin/tpclash`, 然后创建 `/etc/systemd/system/tpclash.service` 配置文件, 并且将附加参数也同步写入到 Systemd 配置中.**
 
 ```sh
 root@tpclash ~ # ❯❯❯ ./tpclash-premium-linux-amd64-v3 install --config https://example.com/clash.yaml
