@@ -82,6 +82,9 @@ var installCmd = &cobra.Command{
 		if conf.EnableTracing {
 			opts += " --enable-tracing"
 		}
+		if conf.AllowStandardDNSPort {
+			opts += " --allow-standard-dns"
+		}
 
 		err = os.WriteFile(filepath.Join(systemdDir, "tpclash.service"), []byte(fmt.Sprintf(systemdTpl, opts)), 0644)
 		if err != nil {
