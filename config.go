@@ -33,10 +33,11 @@ type TPClashConf struct {
 	CheckInterval     time.Duration
 	ConfigEncPassword string
 
-	DisableExtract     bool
-	EnableTracing      bool
-	PrintVersion       bool
-	UpgradeWithGhProxy bool
+	DisableExtract       bool
+	EnableTracing        bool
+	PrintVersion         bool
+	UpgradeWithGhProxy   bool
+	AllowStandardDNSPort bool
 
 	Test  bool
 	Debug bool
@@ -107,7 +108,7 @@ func CheckConfig(c string) (*ClashConf, error) {
 	if dport < 1 {
 		return nil, fmt.Errorf("[config] dns port in clash config is missing(dns.listen)")
 	}
-	if dport == 53 {
+	if !conf.AllowStandardDNSPort && dport == 53 {
 		return nil, fmt.Errorf("[config] please do not set DNS to listen on port 53(dns.listen), see also: https://github.com/mritd/tpclash/wiki/Clash-DNS-%E7%A7%91%E6%99%AE")
 	}
 
