@@ -85,6 +85,9 @@ var installCmd = &cobra.Command{
 		if conf.AllowStandardDNSPort {
 			opts += " --allow-standard-dns"
 		}
+		if conf.AutoFixMode != "" {
+			opts += fmt.Sprintf(" %s %s", "--auto-fix", conf.AutoFixMode)
+		}
 
 		err = os.WriteFile(filepath.Join(systemdDir, "tpclash.service"), []byte(fmt.Sprintf(systemdTpl, opts)), 0644)
 		if err != nil {

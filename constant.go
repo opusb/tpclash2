@@ -1,5 +1,14 @@
 package main
 
+const logo = `
+████████╗██████╗  ██████╗██╗      █████╗ ███████╗██╗  ██╗
+╚══██╔══╝██╔══██╗██╔════╝██║     ██╔══██╗██╔════╝██║  ██║
+   ██║   ██████╔╝██║     ██║     ███████║███████╗███████║
+   ██║   ██╔═══╝ ██║     ██║     ██╔══██║╚════██║██╔══██║
+   ██║   ██║     ╚██████╗███████╗██║  ██║███████║██║  ██║
+   ╚═╝   ╚═╝      ╚═════╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+`
+
 // https://github.com/torvalds/linux/blob/master/include/uapi/linux/capability.h
 const (
 	CAP_NET_BIND_SERVICE = 10
@@ -16,14 +25,62 @@ const (
 	InternalConfigName   = "xclash.yaml"
 )
 
-const logo = `
-████████╗██████╗  ██████╗██╗      █████╗ ███████╗██╗  ██╗
-╚══██╔══╝██╔══██╗██╔════╝██║     ██╔══██╗██╔════╝██║  ██║
-   ██║   ██████╔╝██║     ██║     ███████║███████╗███████║
-   ██║   ██╔═══╝ ██║     ██║     ██╔══██║╚════██║██╔══██║
-   ██║   ██║     ╚██████╗███████╗██║  ██║███████║██║  ██║
-   ╚═╝   ╚═╝      ╚═════╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+const (
+	bindAddressPatch = `# TPClash Common Config AutoFix
+bind-address: '*'
 `
+	externalControllerPatch = `# TPClash Common Config AutoFix
+external-controller: 0.0.0.0:9090
+`
+	secretPatch = `# TPClash Common Config AutoFix
+secret: tpclash
+`
+	tunStandardPatch = `# TPClash TUN AutoFix
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - any:53
+  auto-route: true
+  auto-redir: true
+`
+	tunEBPFPatch = `# TPClash TUN eBPF AutoFix
+tun:
+  enable: true
+  stack: system
+  dns-hijack:
+    - any:53
+  auto-route: false
+  auto-redir: false
+`
+	dnsPatch = `# TPClash DNS AutoFix
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  fake-ip-filter:
+    - '*.lan'
+    - '*.local'
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+  nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+`
+	nicPatch = `# TPClash Nic AutoFix
+interface-name: {{MainNic}}
+`
+	ebpfPatch = `# TPClash eBPF AutoFix
+ebpf:
+  redirect-to-tun:
+    - {{MainNic}}
+`
+	routingMarkPatch = `# TPClash routing-mark AutoFix
+routing-mark: 666
+`
+)
 
 const systemdTpl = `[Unit]
 Description=Transparent proxy tool for Clash

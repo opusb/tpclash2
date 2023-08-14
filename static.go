@@ -59,7 +59,7 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) erro
 	return nil
 }
 
-func ExtractFiles(conf *TPClashConf) {
+func ExtractFiles() {
 	logrus.Info("[static] creating storage dir...")
 	info, err := os.Stat(conf.ClashHome)
 	if err != nil {

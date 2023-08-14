@@ -49,7 +49,6 @@ tasks:
       - test -f static/ruleset/direct.yaml
       - test -f static/ruleset/private.yaml
       - test -f static/ruleset/gfw.yaml
-      - test -f static/ruleset/greatfire.yaml
       - test -f static/ruleset/tld-not-cn.yaml
       - test -f static/ruleset/telegramcidr.yaml
       - test -f static/ruleset/cncidr.yaml

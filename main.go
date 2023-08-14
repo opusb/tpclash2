@@ -50,10 +50,10 @@ var rootCmd = &cobra.Command{
 		Sysctl()
 
 		// Extract Clash executable and built-in configuration files
-		ExtractFiles(&conf)
+		ExtractFiles()
 
 		// Watch config file
-		updateCh := WatchConfig(ctx, &conf)
+		updateCh := WatchConfig(ctx)
 
 		// Wait for the first config to return
 		clashConfStr := <-updateCh
@@ -158,6 +158,7 @@ func init() {
 	rootCmd.PersistentFlags().StringSliceVar(&conf.HttpHeader, "http-header", []string{}, "http header when requesting a remote config(key=value)")
 	rootCmd.PersistentFlags().DurationVar(&conf.HttpTimeout, "http-timeout", 10*time.Second, "http request timeout when requesting a remote config")
 	rootCmd.PersistentFlags().StringVar(&conf.ConfigEncPassword, "config-password", "", "the password for encrypting the config file")
+	rootCmd.PersistentFlags().StringVar(&conf.AutoFixMode, "auto-fix", "", "automatically repair config(tun/ebpf)")
 	rootCmd.PersistentFlags().BoolVar(&conf.DisableExtract, "disable-extract", false, "disable extract files")
 	rootCmd.PersistentFlags().BoolVar(&conf.AllowStandardDNSPort, "allow-standard-dns", false, "allow standard DNS port")
 	rootCmd.PersistentFlags().BoolVarP(&conf.PrintVersion, "version", "v", false, "version for tpclash")

@@ -32,6 +32,7 @@ type TPClashConf struct {
 	HttpTimeout       time.Duration
 	CheckInterval     time.Duration
 	ConfigEncPassword string
+	AutoFixMode       string
 
 	DisableExtract       bool
 	EnableTracing        bool
@@ -148,17 +149,17 @@ func CheckConfig(c string) (*ClashConf, error) {
 	return &cc, nil
 }
 
-func WatchConfig(ctx context.Context, conf *TPClashConf) chan string {
+func WatchConfig(ctx context.Context) chan string {
 	buffer := ""
 	updateCh := make(chan string, 3)
 
 	if strings.HasPrefix(conf.ClashConfig, "http://") || strings.HasPrefix(conf.ClashConfig, "https://") {
-		ccStr, err := loadRemoteConfig(conf)
+		ccStr, err := loadRemoteConfig()
 		if err != nil {
 			logrus.Fatal(err)
 		}
 		buffer = ccStr
-		updateCh <- AutoFix(ccStr)
+		updateCh <- autoFix(ccStr)
 
 		go func() {
 			tick := time.Tick(conf.CheckInterval)
@@ -169,25 +170,25 @@ func WatchConfig(ctx context.Context, conf *TPClashConf) chan string {
 					logrus.Warnf("[config] stop config watching...")
 					return
 				case <-tick:
-					ccStr, err = loadRemoteConfig(conf)
+					ccStr, err = loadRemoteConfig()
 					if err != nil {
 						logrus.Error(err)
 						continue
 					}
 					if ccStr != buffer {
 						buffer = ccStr
-						updateCh <- AutoFix(ccStr)
+						updateCh <- autoFix(ccStr)
 					}
 				}
 			}
 		}()
 	} else {
-		ccStr, err := loadLocalConfig(conf)
+		ccStr, err := loadLocalConfig()
 		if err != nil {
 			logrus.Fatal(err)
 		}
 		buffer = ccStr
-		updateCh <- AutoFix(ccStr)
+		updateCh <- autoFix(ccStr)
 
 		go func() {
 			watcher, err := fsnotify.NewWatcher()
@@ -214,14 +215,14 @@ func WatchConfig(ctx context.Context, conf *TPClashConf) chan string {
 						continue
 					}
 					if event.Has(fsnotify.Write) {
-						ccStr, err = loadLocalConfig(conf)
+						ccStr, err = loadLocalConfig()
 						if err != nil {
 							logrus.Error(err)
 							continue
 						}
 						if ccStr != buffer {
 							buffer = ccStr
-							updateCh <- AutoFix(ccStr)
+							updateCh <- autoFix(ccStr)
 						}
 					}
 				case err, ok := <-watcher.Errors:
@@ -238,29 +239,11 @@ func WatchConfig(ctx context.Context, conf *TPClashConf) chan string {
 	return updateCh
 }
 
-func AutoFix(c string) string {
-	var buf bytes.Buffer
-	tpl, err := template.New("").Funcs(confFuncsMap).Parse(c)
-
-	if err != nil {
-		logrus.Errorf("[autofix] failed to parse template: %v", err)
-		return c
-	}
-
-	// Auto-inject some value
-	if err = tpl.Execute(&buf, nil); err != nil {
-		logrus.Errorf("[autofix] failed to execute template: %v", err)
-		return c
-	}
-
-	return buf.String()
-}
-
 func AutoReload(updateCh chan string, writePath string) {
 	for ccStr := range updateCh {
 		logrus.Info("[config] clash config changed, reloading...")
 
-		ccStr = AutoFix(ccStr)
+		ccStr = autoFix(ccStr)
 		cc, err := CheckConfig(ccStr)
 		if err != nil {
 			logrus.Errorf("[config] an error was detected in the clash config, skipping automatic reload:\n %v", err)
@@ -317,7 +300,25 @@ func Decrypt(ciphertext []byte, password string) ([]byte, error) {
 	return aead.Open(nil, make([]byte, aead.NonceSize()), ciphertext, nil)
 }
 
-func loadRemoteConfig(conf *TPClashConf) (string, error) {
+func tplRendering(c string) string {
+	var buf bytes.Buffer
+
+	tpl, err := template.New("").Funcs(confFuncsMap).Parse(c)
+	if err != nil {
+		logrus.Errorf("[tplRendering] failed to parse template: %v", err)
+		return c
+	}
+
+	// Auto-inject some value
+	if err = tpl.Execute(&buf, nil); err != nil {
+		logrus.Errorf("[tplRendering] failed to execute template: %v", err)
+		return c
+	}
+
+	return buf.String()
+}
+
+func loadRemoteConfig() (string, error) {
 	logrus.Debugf("[config] checking remote config...")
 
 	req, err := http.NewRequest("GET", conf.ClashConfig, nil)
@@ -359,7 +360,7 @@ func loadRemoteConfig(conf *TPClashConf) (string, error) {
 	return string(bs), nil
 }
 
-func loadLocalConfig(conf *TPClashConf) (string, error) {
+func loadLocalConfig() (string, error) {
 	logrus.Debugf("[config] checking local config...")
 
 	bs, err := os.ReadFile(conf.ClashConfig)
@@ -373,4 +374,152 @@ func loadLocalConfig(conf *TPClashConf) (string, error) {
 	}
 
 	return string(bs), nil
+}
+
+func autoFix(c string) string {
+	c = tplRendering(c)
+
+	if conf.AutoFixMode == "" {
+		return c
+	}
+
+	logrus.Infof("[autofix] enable config auto fix...")
+
+	var rootNode yaml.Node
+	if err := yaml.Unmarshal([]byte(c), &rootNode); err != nil {
+		logrus.Errorf("[autofix] failed to unmarshal yaml config: %v", err)
+		return c
+	}
+
+	var bindAddressNode yaml.Node
+	_ = yaml.Unmarshal([]byte(tplRendering(bindAddressPatch)), &bindAddressNode)
+	if !setYamlNode(&rootNode, "bind-address", bindAddressNode.Content[0]) {
+		logrus.Error("[autofix] failed to patch bind-address config")
+		return c
+	}
+
+	var externalControllerNode yaml.Node
+	_ = yaml.Unmarshal([]byte(tplRendering(externalControllerPatch)), &externalControllerNode)
+	if !setYamlNode(&rootNode, "external-controller", externalControllerNode.Content[0]) {
+		logrus.Error("[autofix] failed to patch external-controller config")
+		return c
+	}
+
+	var secretNode yaml.Node
+	_ = yaml.Unmarshal([]byte(tplRendering(secretPatch)), &secretNode)
+	if !setYamlNode(&rootNode, "secret", secretNode.Content[0]) {
+		logrus.Error("[autofix] failed to patch secret config")
+		return c
+	}
+
+	var nicNode yaml.Node
+	_ = yaml.Unmarshal([]byte(tplRendering(nicPatch)), &nicNode)
+	if !setYamlNode(&rootNode, "interface-name", nicNode.Content[0]) {
+		logrus.Error("[autofix] failed to patch nic config")
+		return c
+	}
+
+	var dnsNode yaml.Node
+	_ = yaml.Unmarshal([]byte(tplRendering(dnsPatch)), &dnsNode)
+	if !setYamlNode(&rootNode, "dns", dnsNode.Content[0]) {
+		logrus.Error("[autofix] failed to patch dns config")
+		return c
+	}
+
+	if conf.AutoFixMode == "ebpf" {
+		var tunNode yaml.Node
+		_ = yaml.Unmarshal([]byte(tplRendering(tunEBPFPatch)), &tunNode)
+		if !setYamlNode(&rootNode, "tun", tunNode.Content[0]) {
+			logrus.Error("[autofix] failed to patch tun config")
+			return c
+		}
+
+		var ebpfNode yaml.Node
+		_ = yaml.Unmarshal([]byte(tplRendering(ebpfPatch)), &ebpfNode)
+		if !setYamlNode(&rootNode, "ebpf", ebpfNode.Content[0]) {
+			logrus.Error("[autofix] failed to patch ebpf config")
+			return c
+		}
+
+		var routingMarkNode yaml.Node
+		_ = yaml.Unmarshal([]byte(tplRendering(routingMarkPatch)), &routingMarkNode)
+		if !setYamlNode(&rootNode, "routing-mark", routingMarkNode.Content[0]) {
+			logrus.Error("[autofix] failed to patch routing-mark config")
+			return c
+		}
+	} else {
+		var tunNode yaml.Node
+		_ = yaml.Unmarshal([]byte(tplRendering(tunStandardPatch)), &tunNode)
+		if !setYamlNode(&rootNode, "tun", tunNode.Content[0]) {
+			logrus.Error("[autofix] failed to patch tun config")
+			return c
+		}
+	}
+
+	bs, err := yaml.Marshal(&rootNode)
+	if err != nil {
+		logrus.Errorf("[autofix] failed to marshal yaml config: %v", err)
+		return c
+	}
+
+	return string(bs)
+}
+
+func setYamlNode(node *yaml.Node, key string, value *yaml.Node) bool {
+	keys := strings.SplitN(key, ".", 2)
+
+	switch node.Kind {
+	case yaml.DocumentNode:
+		return setYamlNode(node.Content[0], key, value)
+	case yaml.ScalarNode:
+		return setYamlNode(node.Content[1], key, value)
+	case yaml.MappingNode:
+		for i, n := range node.Content {
+			if n.Value == keys[0] {
+				if len(keys) == 2 {
+					return setYamlNode(node.Content[i+1], keys[1], value)
+				} else {
+					node.Content[i+1] = value.Content[1]
+					return true
+				}
+			}
+		}
+
+		if len(keys) == 2 {
+			keyNode := &yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Tag:   "!!str",
+				Value: keys[0],
+			}
+			valueNode := &yaml.Node{
+				Kind:    yaml.MappingNode,
+				Tag:     "!!map",
+				Content: []*yaml.Node{},
+			}
+			node.Content = append(node.Content, keyNode, valueNode)
+			return setYamlNode(valueNode, keys[1], value)
+		} else {
+			node.Content = append(node.Content, value.Content[0], value.Content[1])
+			return true
+		}
+	case yaml.SequenceNode:
+		index, err := strconv.Atoi(keys[0])
+		if err != nil {
+			logrus.Errorf("[yaml] path conversion failed: %v: %v", key, err)
+			return false
+		}
+		if len(node.Content) < index+1 {
+			logrus.Errorf("[yaml] path conversion failed: %v: %v", key, err)
+			return false
+		}
+
+		if len(keys) == 2 {
+			return setYamlNode(node.Content[index], keys[1], value)
+		} else {
+			node.Content[index] = value
+			return true
+		}
+	}
+
+	return false
 }
