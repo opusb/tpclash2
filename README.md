@@ -190,6 +190,15 @@ iptables:
   enable: false
 ```
 
+### 3.4、订阅用户
+
+如果期望完全不修改订阅配置实现透明代理, 可直接使用 `--auto-fix=tun` 参数启动, **该参数将会自动修补远程配置来实现透明代理, 同样带来的
+后果是一些参数将会被硬编码:**
+
+```sh
+root@tpclash ~ # ❯❯❯ tpclash --auto-fix tun -c https://exmaple.com/clash.yaml
+```
+
 ## 四、高级配置
 
 ### 4.1、远程配置加载
