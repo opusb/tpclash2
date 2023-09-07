@@ -3,7 +3,7 @@ module github.com/mritd/tpclash
 go 1.20
 
 require (
-	github.com/docker/docker v24.0.5+incompatible
+	github.com/docker/docker v24.0.6+incompatible
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/google/nftables v0.1.0
 	github.com/hashicorp/go-version v1.6.0
