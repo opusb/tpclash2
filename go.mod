@@ -1,6 +1,8 @@
 module github.com/mritd/tpclash
 
-go 1.20
+go 1.21
+
+toolchain go1.21.1
 
 require (
 	github.com/docker/docker v24.0.6+incompatible
@@ -26,21 +28,21 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/native v1.1.0 // indirect
 	github.com/mdlayher/netlink v1.7.2 // indirect
-	github.com/mdlayher/socket v0.4.1 // indirect
+	github.com/mdlayher/socket v0.5.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/exp/typeparams v0.0.0-20230801115018-d63ba01acd4b // indirect
+	golang.org/x/exp/typeparams v0.0.0-20230905200255-921286631fa9 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/net v0.13.0 // indirect
+	golang.org/x/net v0.15.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
-	golang.org/x/tools v0.11.1 // indirect
-	gotest.tools/v3 v3.5.0 // indirect
-	honnef.co/go/tools v0.4.3 // indirect
+	golang.org/x/tools v0.13.0 // indirect
+	gotest.tools/v3 v3.5.1 // indirect
+	honnef.co/go/tools v0.4.6 // indirect
 )
