@@ -75,7 +75,11 @@ func ExtractFiles() {
 			return
 		}
 	} else {
-		if !os.IsNotExist(err) {
+		if os.IsNotExist(err) {
+			if err = os.MkdirAll(conf.ClashHome, 0755); err != nil {
+				logrus.Fatalf("[static] failed to create storage dir: %v", err)
+			}
+		} else {
 			logrus.Fatalf("[static] failed to read storage dir: %v", err)
 		}
 	}
