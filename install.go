@@ -76,8 +76,8 @@ var installCmd = &cobra.Command{
 		if conf.ConfigEncPassword != "" {
 			opts += fmt.Sprintf(" %s %s", "--config-password", conf.ConfigEncPassword)
 		}
-		if conf.DisableExtract {
-			opts += " --disable-extract"
+		if conf.ForceExtract {
+			opts += " --force-extract"
 		}
 		if conf.EnableTracing {
 			opts += " --enable-tracing"

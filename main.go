@@ -159,7 +159,7 @@ func init() {
 	rootCmd.PersistentFlags().DurationVar(&conf.HttpTimeout, "http-timeout", 10*time.Second, "http request timeout when requesting a remote config")
 	rootCmd.PersistentFlags().StringVar(&conf.ConfigEncPassword, "config-password", "", "the password for encrypting the config file")
 	rootCmd.PersistentFlags().StringVar(&conf.AutoFixMode, "auto-fix", "", "automatically repair config(tun/ebpf)")
-	rootCmd.PersistentFlags().BoolVar(&conf.DisableExtract, "disable-extract", false, "disable extract files")
+	rootCmd.PersistentFlags().BoolVar(&conf.ForceExtract, "force-extract", false, "extract files force")
 	rootCmd.PersistentFlags().BoolVar(&conf.AllowStandardDNSPort, "allow-standard-dns", false, "allow standard DNS port")
 	rootCmd.PersistentFlags().BoolVarP(&conf.PrintVersion, "version", "v", false, "version for tpclash")
 

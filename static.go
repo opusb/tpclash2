@@ -23,14 +23,17 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) erro
 
 		if dirEntry.IsDir() {
 			logrus.Debugf("[static] extract -> %s %s", filepath.Join(target, dirEntry.Name()), perm.String())
+
 			err := os.MkdirAll(filepath.Join(target, dirEntry.Name()), perm)
 			if err != nil {
 				return err
 			}
+
 			entries, err := efs.ReadDir(filepath.Join(origin, dirEntry.Name()))
 			if err != nil {
 				return err
 			}
+
 			err = extract(efs, entries, filepath.Join(origin, dirEntry.Name()), filepath.Join(target, dirEntry.Name()))
 			if err != nil {
 				return err
@@ -62,26 +65,18 @@ func extract(efs embed.FS, dirEntries []fs.DirEntry, origin, target string) erro
 func ExtractFiles() {
 	logrus.Info("[static] creating storage dir...")
 	info, err := os.Stat(conf.ClashHome)
-	if err != nil {
-		if os.IsNotExist(err) {
-			err = os.MkdirAll(conf.ClashHome, 0755)
-			if err != nil {
-				logrus.Fatalf("[static] failed to create clash home dir: %v", err)
-			}
-		} else {
-			logrus.Fatalf("failed to open clash home dir: %v", err)
+	if err == nil {
+		if !conf.ForceExtract {
+			logrus.Infof("[static] storage dir %s already exist, skip extract...", conf.ClashHome)
+			return
 		}
-	} else if !info.IsDir() {
+	}
+
+	if !info.IsDir() {
 		logrus.Fatalf("[static] clash home path is not a dir")
 	}
 
-	if conf.DisableExtract {
-		logrus.Warn("[static] skip copy static files...")
-		return
-	}
-
 	logrus.Info("[static] copy static files...")
-
 	dirEntries, err := static.ReadDir("static")
 	if err != nil {
 		logrus.Fatalf("[static] failed to read embed dir: %v", err)

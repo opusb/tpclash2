@@ -34,7 +34,7 @@ type TPClashConf struct {
 	ConfigEncPassword string
 	AutoFixMode       string
 
-	DisableExtract       bool
+	ForceExtract         bool
 	EnableTracing        bool
 	PrintVersion         bool
 	UpgradeWithGhProxy   bool
