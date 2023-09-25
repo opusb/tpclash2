@@ -66,14 +66,18 @@ func ExtractFiles() {
 	logrus.Info("[static] creating storage dir...")
 	info, err := os.Stat(conf.ClashHome)
 	if err == nil {
+		if !info.IsDir() {
+			logrus.Fatalf("[static] clash home path is not a dir")
+		}
+
 		if !conf.ForceExtract {
 			logrus.Infof("[static] storage dir %s already exist, skip extract...", conf.ClashHome)
 			return
 		}
-	}
-
-	if !info.IsDir() {
-		logrus.Fatalf("[static] clash home path is not a dir")
+	} else {
+		if !os.IsNotExist(err) {
+			logrus.Fatalf("[static] failed to read storage dir: %v", err)
+		}
 	}
 
 	logrus.Info("[static] copy static files...")
