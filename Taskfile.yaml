@@ -8,9 +8,9 @@ vars:
   BUILD_DATE:
     sh: date '+%F %T'
   PREMIUM_VERSION:
-    sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.name'
+    sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization: Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.name'
   META_VERSION:
-    sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.name'
+    sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization: Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.name'
 
 tasks:
   clean:
@@ -103,7 +103,7 @@ tasks:
     desc: Download Clash Premium
     vars:
       CLASH_PREMIUM_URL:
-        sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.assets[].browser_download_url | select (. | test("clash-{{.PLATFORM}}-\\d{4}.*gz"))'
+        sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization: Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/Dreamacro/clash/releases/tags/premium | jq -r '.assets[].browser_download_url | select (. | test("clash-{{.PLATFORM}}-\\d{4}.*gz"))'
     cmds:
       - curl -sSL {{.CLASH_PREMIUM_URL}} > build/clash-{{.PLATFORM}}.gz
       - gzip -d build/clash-{{.PLATFORM}}.gz
@@ -115,7 +115,7 @@ tasks:
     desc: Download Clash Meta
     vars:
       CLASH_META_URL:
-        sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization:\ Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.assets[].browser_download_url | select (. | test("clash.meta-{{.PLATFORM}}-v\\d+.*gz"))'
+        sh: curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization: Bearer {{.GITHUB_TOKEN}}'{{end}} https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.assets[].browser_download_url | select (. | test("clash.meta-{{.PLATFORM}}-v\\d+.*gz"))'
     cmds:
       - curl -sSL {{.CLASH_META_URL}} > build/clash-meta-{{.PLATFORM}}.gz
       - gzip -d build/clash-meta-{{.PLATFORM}}.gz
