@@ -303,6 +303,15 @@ tasks:
           GOARCH: mips64le
         }
 
+  linux-386-meta:
+    desc: Build TPClash With Clash Meta(linux/386)
+    cmds:
+      - task: build-tpclash-meta
+        vars: {
+          PLATFORM: linux-386,
+          GOOS: linux,
+          GOARCH: 386,
+        }
   linux-amd64-meta:
     desc: Build TPClash With Clash Meta(linux/amd64)
     cmds:
@@ -418,6 +427,7 @@ tasks:
       - task: linux-amd64-v3-premium
       - task: linux-arm64-premium
       - rm -rf static/yacd static/official
+      - task: linux-386-meta
       - task: linux-amd64-meta
       - task: linux-amd64-v3-meta
       - task: linux-arm64-meta
