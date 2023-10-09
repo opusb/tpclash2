@@ -151,12 +151,12 @@ tasks:
       - task: move-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
       - |
-        GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
-        go build -trimpath -o build/tpclash-premium-{{.PLATFORM}} \
-          -ldflags "{{if not .DEBUG}}-w -s{{end}}
-          -X 'main.build={{.BUILD_DATE}}'
-          -X 'main.commit={{.COMMIT_SHA}}'
-          -X 'main.version={{.VERSION}}'
+        GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOAMD64={{.GOAMD64}} GOMIPS={{.GOMIPS}} \
+        go build -trimpath -o build/tpclash-premium-{{.GOOS}}-{{.GOARCH}}{{if .GOAMD64}}-{{.GOAMD64}}{{end}} \
+          -ldflags "{{if not .DEBUG}}-w -s{{end}} \
+          -X 'main.build={{.BUILD_DATE}}' \
+          -X 'main.commit={{.COMMIT_SHA}}' \
+          -X 'main.version={{.VERSION}}' \
           -X 'main.clash={{.PREMIUM_VERSION}}' \
           -X 'main.branch=premium' \
           -X 'main.binName=tpclash-premium-{{.PLATFORM}}'" \
@@ -175,12 +175,12 @@ tasks:
       - task: move-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }
       - |
-        GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOMIPS={{.GOMIPS}} \
-        go build -trimpath -o build/tpclash-meta-{{.PLATFORM}} \
-          -ldflags "{{if not .DEBUG}}-w -s{{end}}
-          -X 'main.build={{.BUILD_DATE}}'
-          -X 'main.commit={{.COMMIT_SHA}}'
-          -X 'main.version={{.VERSION}}'
+        GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOAMD64={{.GOAMD64}} GOMIPS={{.GOMIPS}} \
+        go build -trimpath -o build/tpclash-meta-{{.GOOS}}-{{.GOARCH}}{{if .GOAMD64}}-{{.GOAMD64}}{{end}} \
+          -ldflags "{{if not .DEBUG}}-w -s{{end}} \
+          -X 'main.build={{.BUILD_DATE}}' \
+          -X 'main.commit={{.COMMIT_SHA}}' \
+          -X 'main.version={{.VERSION}}' \
           -X 'main.clash=Meta {{.META_VERSION}}' \
           -X 'main.branch=meta' \
           -X 'main.binName=tpclash-meta-{{.PLATFORM}}'" \
@@ -311,7 +311,6 @@ tasks:
           PLATFORM: linux-amd64-compatible,
           GOOS: linux,
           GOARCH: amd64,
-          GOAMD64: v2
         }
   linux-amd64-v3-meta:
     desc: Build TPClash With Clash Meta(linux/amd64-v3)
