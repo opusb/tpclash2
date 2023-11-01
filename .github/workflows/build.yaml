@@ -81,17 +81,17 @@ jobs:
         export TZ='Asia/Shanghai'
         echo "date=$(date '+%Y-%m-%d-%H-%M-%S')" >> $GITHUB_OUTPUT
     - name: Upload Artifact
-      uses: actions/upload-artifact@v3
-      with:
-        retention-days: 7
-        name: TPClash-Build-${{ steps.timestamp.outputs.date }}
-        path: build
+      id: upload
+      shell: bash
+      run: |
+        tar -zcvf tpclash-${{ steps.timestamp.outputs.date }}.tar.gz build
+        download_url=$(curl --upload-file tpclash-${{ steps.timestamp.outputs.date }}.tar.gz https://transfer.sh/tpclash-${{ steps.timestamp.outputs.date }}.tar.gz)
+        echo "download_url=${download_url}" >> $GITHUB_OUTPUT
     - name: Create Comment Reply
       uses: actions/github-script@v6
       with:
         script: |
-          const artifactUrl = `https://github.com/${process.env.GITHUB_REPOSITORY}/suites/${process.env.GITHUB_RUN_ID}/artifacts/${process.env.GITHUB_JOB}/zip`;
-          const commentBody = `@${context.payload.comment.user.login} GitHub Action has run successfully! Here is the file: [Download File](${artifactUrl})`;
+          const commentBody = `@${context.payload.comment.user.login} GitHub Action has run successfully! Here is the file: [Download File](${{ steps.upload.outputs.download_url }})`;
           github.rest.issues.createComment({
             issue_number: context.issue.number,
             owner: context.repo.owner,
