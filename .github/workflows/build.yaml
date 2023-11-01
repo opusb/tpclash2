@@ -1,11 +1,14 @@
-name: build
+name: TPClash
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
-      build-dir:
+      trigger:
+        description: Manually trigger
         required: true
-        type: string
+        type: choice
+        options:
+          - build
 
 env:
   FORCE_COLOR: 1
