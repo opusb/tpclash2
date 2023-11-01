@@ -15,6 +15,14 @@ vars:
     sh: |
       curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization: Bearer {{.GITHUB_TOKEN}}'{{end}} \
         https://api.github.com/repos/MetaCubeX/Clash.Meta/releases/latest | jq -r '.name'
+  META_DASHBOARD_VERSION:
+    sh: |
+      curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization: Bearer {{.GITHUB_TOKEN}}'{{end}} \
+        https://api.github.com/repos/MetaCubeX/metacubexd/releases/latest | jq -r '.name'
+  META_DASHBOARD_YACD_VERSION:
+    sh: |
+      curl -sSL {{if .GITHUB_TOKEN}}-H 'Authorization: Bearer {{.GITHUB_TOKEN}}'{{end}} \
+        https://api.github.com/repos/MetaCubeX/Yacd-meta/releases/latest | jq -r '.name'
 
 tasks:
   clean:
@@ -91,9 +99,9 @@ tasks:
   build-meta-dashboard:
     desc: Build Clash Meta Dashboard
     cmds:
-      - git clone https://github.com/MetaCubeX/Yacd-meta.git build/yacd
+      - git clone --depth 1 --branch {{.META_DASHBOARD_YACD_VERSION}} https://github.com/MetaCubeX/Yacd-meta.git build/yacd
       - defer: rm -rf build/yacd
-      - git clone https://github.com/MetaCubeX/Razord-meta.git build/official
+      - git clone --depth 1 --branch {{.META_DASHBOARD_VERSION}} https://github.com/MetaCubeX/metacubexd.git build/official
       - defer: rm -rf build/official
       - (cd build/yacd && pnpm install && pnpm build)
       - (cd build/official && pnpm install && pnpm build)
