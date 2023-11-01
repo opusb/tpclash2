@@ -92,7 +92,7 @@ tasks:
     desc: Build Clash Meta Dashboard
     cmds:
       - git clone https://github.com/MetaCubeX/Yacd-meta.git build/yacd
-      - defer: rm -rf build/yacd
+      - defer: rm -rf build/yacd 2>&1
       - git clone https://github.com/MetaCubeX/Razord-meta.git build/official
       - defer: rm -rf build/official
       - (cd build/yacd && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
