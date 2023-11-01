@@ -63,8 +63,13 @@ jobs:
     - name: Build TPClash
       shell: bash
       run: task
+    - name: Get current date
+      id: date
+      run: |
+        export TZ='Asia/Shanghai'
+        echo "::set-output name=date::$(date '+%Y-%m-%d-%H-%M-%S')"
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: TPClash-${{ github.run_number }}-${{ steps.timestamp.outputs.timestamp }}
+        name: TPClash-${{ github.run_number }}-${{ steps.date.outputs.date }}
         path: build
