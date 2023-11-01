@@ -62,5 +62,9 @@ jobs:
         npm install -g pnpm @go-task/cli
     - name: Build TPClash
       shell: bash
-      run: |
-        task
+      run: task
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: TPClash-${{ github.run_number }}-${{ steps.timestamp.outputs.timestamp }}
+        path: build
