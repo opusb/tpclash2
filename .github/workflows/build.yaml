@@ -24,22 +24,21 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
     - name: Reply to Issue Comment
-      uses: actions/github-script@v5
+      uses: actions/github-script@v6
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const comment = `Thank you for your comment, @${
             context.payload.comment.user.login
           }! Here is the link to the current workflow: [Workflow](${
             process.env.GITHUB_SERVER_URL
           }/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`;
-          const { data: newComment } = await github.issues.createComment({
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
             owner: context.repo.owner,
             repo: context.repo.repo,
-            issue_number: context.issue.number,
             body: comment,
           });
-          console.log(`Replied to issue comment: ${newComment.html_url}`);
     - name: Put back the git branch into git
       shell: bash
       run: |
