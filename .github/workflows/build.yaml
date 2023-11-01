@@ -48,4 +48,4 @@ jobs:
     - name: Build TPClash
       shell: bash
       run: |
-        task
+        task linux-386-meta
