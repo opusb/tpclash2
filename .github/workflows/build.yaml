@@ -21,6 +21,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+    - name: Check Comment Content
+      id: check-comment
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const commentBody = context.payload.comment.body;
+          const regex = /^rebuild$/;
+          const shouldContinue = regex.test(commentBody);
+          if (!shouldContinue) {
+            console.log('Terminating workflow');
+            process.exit(1);
+          }
     - name: Notify User
       uses: actions/github-script@v6
       with:
