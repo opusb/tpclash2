@@ -80,8 +80,8 @@ tasks:
       - defer: rm -rf build/yacd
       - git clone https://github.com/Dreamacro/clash-dashboard.git build/official
       - defer: rm -rf build/official
-      - (cd build/yacd && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
-      - (cd build/official && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
+      - (cd build/yacd && pnpm install && pnpm build)
+      - (cd build/official && pnpm install && pnpm build)
       - cp -r build/yacd/public static/yacd
       - cp -r build/official/dist static/official
     status:
@@ -92,11 +92,11 @@ tasks:
     desc: Build Clash Meta Dashboard
     cmds:
       - git clone https://github.com/MetaCubeX/Yacd-meta.git build/yacd
-      - defer: rm -rf build/yacd 2>&1
+      - defer: rm -rf build/yacd
       - git clone https://github.com/MetaCubeX/Razord-meta.git build/official
       - defer: rm -rf build/official
-      - (cd build/yacd && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
-      - (cd build/official && pnpm install > /dev/null 2>&1 && pnpm build > /dev/null 2>&1)
+      - (cd build/yacd && pnpm install && pnpm build)
+      - (cd build/official && pnpm install && pnpm build)
       - cp -r build/yacd/public static/yacd
       - cp -r build/official/dist static/official
     status:
@@ -133,14 +133,14 @@ tasks:
     status:
       - test -f build/clash-meta-{{.PLATFORM}}
 
-  move-clash-premium:
+  copy-clash-premium:
     desc: Copy Clash Premium To Embed FS
     cmds:
       - task: download-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
       - cp -f build/clash-{{.PLATFORM}} static/xclash
 
-  move-clash-meta:
+  copy-clash-meta:
     desc: Copy Clash Meta To Embed FS
     cmds:
       - task: download-clash-meta
@@ -158,7 +158,7 @@ tasks:
       - task: build-premium-dashboard
       - task: download-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - task: move-clash-premium
+      - task: copy-clash-premium
         vars: { PLATFORM: "{{.PLATFORM}}" }
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOAMD64={{.GOAMD64}} GOMIPS={{.GOMIPS}} \
@@ -182,7 +182,7 @@ tasks:
       - task: build-meta-dashboard
       - task: download-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }
-      - task: move-clash-meta
+      - task: copy-clash-meta
         vars: { PLATFORM: "{{.PLATFORM}}" }
       - |
         GOOS={{.GOOS}} GOARCH={{.GOARCH}} GOARM={{.GOARM}} GOAMD64={{.GOAMD64}} GOMIPS={{.GOMIPS}} \
