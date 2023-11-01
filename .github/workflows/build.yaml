@@ -68,8 +68,12 @@ jobs:
       run: |
         export TZ='Asia/Shanghai'
         echo "date=$(date '+%Y-%m-%d-%H-%M-%S')" >> $GITHUB_OUTPUT
+    - name: Package Artifact
+      shell: bash
+      run: tar -zcvf tpclash-${{ steps.timestamp.outputs.date }}.tar.gz build
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
+        retention-days: 7
         name: TPClash-Build-${{ steps.timestamp.outputs.date }}
-        path: build
+        path: tpclash-${{ steps.timestamp.outputs.date }}.tar.gz
