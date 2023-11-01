@@ -21,9 +21,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-    - name: Reply to Issue Comment
+    - name: Notify User
       uses: actions/github-script@v6
       with:
         script: |
@@ -35,6 +33,8 @@ jobs:
             repo: context.repo.repo,
             body: comment,
           });
+    - name: Checkout
+      uses: actions/checkout@v3
     - name: Put back the git branch into git
       shell: bash
       run: |
@@ -64,12 +64,12 @@ jobs:
       shell: bash
       run: task
     - name: Get current date
-      id: date
+      id: timestamp
       run: |
         export TZ='Asia/Shanghai'
-        echo "::set-output name=date::$(date '+%Y-%m-%d-%H-%M-%S')"
+        echo "date=$(date '+%Y-%m-%d-%H-%M-%S')" >> $GITHUB_OUTPUT
     - name: Upload Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: TPClash-${{ github.run_number }}-${{ steps.date.outputs.date }}
+        name: TPClash-Build-${{ steps.timestamp.outputs.date }}
         path: build
