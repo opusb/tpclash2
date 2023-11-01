@@ -44,8 +44,6 @@ jobs:
     - name: Install Deps
       shell: bash
       run: |
-        sudo apt update
-        sudo apt upgrade -y
         npm install -g pnpm @go-task/cli
     - name: Build TPClash
       shell: bash
