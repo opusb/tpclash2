@@ -36,7 +36,7 @@ jobs:
     - name: Use Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: 'latest'
+        node-version: '20.x'
     - name: Use Golang
       uses: actions/setup-go@v4
       with:
@@ -48,4 +48,4 @@ jobs:
     - name: Build TPClash
       shell: bash
       run: |
-        task linux-386-meta
+        task
