@@ -27,11 +27,7 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: |
-          const comment = `Thank you for your comment, @${
-            context.payload.comment.user.login
-          }! Here is the link to the current workflow: [Workflow](${
-            process.env.GITHUB_SERVER_URL
-          }/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`;
+          const comment = `@${context.payload.comment.user.login} TPClash 自动构建已开始, 请访问 CI 链接等待构建完成并下载: [Workflow](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`;
 
           github.rest.issues.createComment({
             issue_number: context.issue.number,
